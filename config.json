@@ -1,0 +1,22 @@
+{
+  "deepgram_api_key": "",
+  "groq_api_key": "",
+  "primary_engine": "deepgram",
+  "default_language": "ar",
+  "typing_mode": "sendinput",
+  "toggle_hotkey": "ctrl+shift+space",
+  "lang_switch_hotkey": "ctrl+shift+l",
+  "ai_polish_hotkey": "ctrl+shift+k",
+  "strip_tashkeel": false,
+  "enable_voice_commands": true,
+  "enable_snippets": true,
+  "enable_profanity_filter": false,
+  "sound_effects": true,
+  "auto_sleep_sec": 10,
+  "char_delay_ms": 1.0,
+  "sample_rate": 16000,
+  "hud_position": "bottom_center",
+  "btn1_action": "toggle_mic",
+  "btn2_action": "switch_lang",
+  "btn3_action": "toggle_drawer"
+}
