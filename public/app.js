@@ -1,77 +1,80 @@
 /**
- * SpeechFlow Web Pro Max Engine
- * Trilingual Localization (EN / AR / KU), Live Web Speech Simulation, Audio EQ Visualizer,
- * and Dynamic GitHub Releases 404 Prevention.
- * by Nashat Shamsadyn Ahmed
+ * SpeechFlow Web Engine
+ * Localization (EN / AR / KU), Live Web Speech Simulation, Audio EQ Visualizer,
+ * Web Audio Chimes, and Dynamic GitHub Releases 404 Prevention.
+ * Author: Nashat Shamsadyn Ahmed
  */
 
-// Trilingual Translations Dictionary
-const translations = {
+// Trilingual Localization
+const i18n = {
   en: {
-    nav_sim: "Simulator",
-    nav_speed: "0.04ms Speed",
-    nav_features: "22 Features",
-    nav_author: "Developer",
-    nav_download: "Get SpeechFlow",
-    hero_pill_badge: "Windows 11 Voice Typing • Ultra-Compact 1-Line Bar",
-    hero_h1_1: "Voice to Text at",
-    hero_h1_highlight: "< 0.05ms Speed.",
-    hero_h1_2: "Flawless Arabic & English.",
-    hero_desc: "A minimalist, single-line floating bar (Height: 36px) that types directly into any Windows app. Built with native Win32 Unicode injection — zero keyboard layout bugs, voice punctuation commands, AI polishing, and 100% free offline execution for 250,000+ users.",
-    hero_dl_btn: "Download for Windows",
-    hero_sim_btn: "Test Live Web Simulator",
+    nav_simulator: "Simulator",
+    nav_features: "Features",
+    nav_speed: "0.04ms Latency",
+    nav_install: "Install Guide",
+    nav_dev: "Developer",
+    nav_download: "Download EXE",
+    hero_badge: "Windows 11 Voice Typing • Ultra-Compact 36px Floating Pill",
+    hero_title_1: "Voice to Text at",
+    hero_title_glow: "< 0.05ms Local Speed.",
+    hero_title_2: "Flawless Arabic & English.",
+    hero_summary: "A minimalist, 36px floating bar that types directly into any Windows app. Built with native Win32 Unicode injection — zero keyboard layout bugs, voice punctuation commands, AI polishing, and 100% free offline execution for 250,000+ users.",
+    hero_btn_main: "Download for Windows",
+    hero_btn_sim: "Test Live Web Simulator",
     sim_badge: "Interactive Experience",
-    sim_title: "The Ultra-Compact 1-Line Win+H Bar",
+    sim_heading: "The Ultra-Compact 1-Line Win+H Bar",
     sim_sub: "No bulky boxes. Just a sleek, 36px floating bar that types right into your cursor position. Try it live:"
   },
   ar: {
-    nav_sim: "المحاكي المباشر",
+    nav_simulator: "المحاكي المباشر",
+    nav_features: "المميزات",
     nav_speed: "سرعة 0.04ms",
-    nav_features: "٢٢ ميزة",
-    nav_author: "المطوّر",
+    nav_install: "دليل التثبيت",
+    nav_dev: "المطوّر",
     nav_download: "تحميل البرنامج",
-    hero_pill_badge: "الكتابة الصوتية لويندوز 11 • شريط نحيف بسطر واحد",
-    hero_h1_1: "تحويل الصوت إلى نص بسرعة",
-    hero_h1_highlight: "أقل من 0.05 ميلي ثانية.",
-    hero_h1_2: "دقة فائقة في العربية والإنجليزية.",
-    hero_desc: "شريط عائم فائق النحافة بسطر واحد (ارتفاع 36px) يكتب مباشرة في أي تطبيق على ويندوز عبر Win32 Unicode — بدون أي مشاكل في لغة الكيبورد، مع علامات الترقيم الصوتية والتنظيف بالذكاء الاصطناعي وتشغيل محلي مجاني تماماً لـ ٢٥٠ ألف مستخدم.",
-    hero_dl_btn: "تحميل لويندوز (مباشر)",
-    hero_sim_btn: "جرب المحاكي في المتصفح",
+    hero_badge: "الكتابة الصوتية لويندوز 11 • شريط نحيف 36px عائم",
+    hero_title_1: "تحويل الصوت إلى نص بسرعة",
+    hero_title_glow: "أقل من 0.05 ميلي ثانية.",
+    hero_title_2: "دقة فائقة في العربية والإنجليزية.",
+    hero_summary: "شريط عائم فائق النحافة (ارتفاع 36px) يكتب مباشرة في أي تطبيق على ويندوز عبر Win32 Unicode — بدون أي مشاكل في لغة الكيبورد، مع علامات الترقيم الصوتية والتنظيف بالذكاء الاصطناعي وتشغيل محلي مجاني تماماً لـ ٢٥٠ ألف مستخدم.",
+    hero_btn_main: "تحميل لويندوز (مباشر)",
+    hero_btn_sim: "جرب المحاكي في المتصفح",
     sim_badge: "تجربة تفاعلية حية",
-    sim_title: "شريط Win+H فائق النحافة (سطر واحد)",
+    sim_heading: "شريط Win+H فائق النحافة (سطر واحد)",
     sim_sub: "بدون أي نوافذ ضخمة أو تشويش. شريط أنيق بارتفاع 36px يكتب فوراً عند مكان المؤشر:"
   },
   ku: {
-    nav_sim: "تاقیکردنەوە",
+    nav_simulator: "تاقیکردنەوە",
+    nav_features: "تایبەتمەندییەکان",
     nav_speed: "خێرایی 0.04ms",
-    nav_features: "٢٢ تایبەتمەندی",
-    nav_author: "گەشەپێدەر",
+    nav_install: "ڕێبەری کارپێکردن",
+    nav_dev: "گەشەپێدەر",
     nav_download: "داگرتنی بەرنامە",
-    hero_pill_badge: "دەنگ بۆ نووسین لە ویندۆز 11 • شریتی یەک هێڵی باریک",
-    hero_h1_1: "گۆڕینی دەنگ بۆ نووسین بە",
-    hero_h1_highlight: "خێرایی کەمتر لە 0.05ms.",
-    hero_h1_2: "بە کوردی، عەرەبی و ئینگلیزی.",
-    hero_desc: "شریتێکی سەرکەوتووی باریک بە بەرزایی ٣٦ پێکسڵ کە ڕاستەوخۆ دەنووسێتە ناو هەموو بەرنامەکانی ویندۆز بێ کێشەی کیبۆرد، بە فرمانی دەنگی پۆینت و فاریزە و کارکردنی ئۆفلاین بۆ زیاتر لە ٢٥٠ هەزار بەکارهێنەر.",
-    hero_dl_btn: "داگرتن بۆ ویندۆز",
-    hero_sim_btn: "تاقیکردنەوە لە وێب",
+    hero_badge: "دەنگ بۆ نووسین لە ویندۆز 11 • شریتی باریکی ٣٦ پێکسڵ",
+    hero_title_1: "گۆڕینی دەنگ بۆ نووسین بە",
+    hero_title_glow: "خێرایی کەمتر لە 0.05ms.",
+    hero_title_2: "بە کوردی، عەرەبی و ئینگلیزی.",
+    hero_summary: "شریتێکی سەرکەوتووی باریک بە بەرزایی ٣٦ پێکسڵ کە ڕاستەوخۆ دەنووسێتە ناو هەموو بەرنامەکانی ویندۆز بێ کێشەی کیبۆرد، بە فرمانی دەنگی پۆینت و فاریزە و کارکردنی ئۆفلاین بۆ زیاتر لە ٢٥٠ هەزار بەکارهێنەر.",
+    hero_btn_main: "داگرتن بۆ ویندۆز",
+    hero_btn_sim: "تاقیکردنەوە لە وێب",
     sim_badge: "تاقیکردنەوەی ڕاستەوخۆ",
-    sim_title: "شریتی Win+H ی یەک هێڵی",
+    sim_heading: "شریتی Win+H ی یەک هێڵی",
     sim_sub: "بێ هیچ پەنجەرەیەکی گەورە، ڕاستەوخۆ دەنووسێتە سەر شاشەکەت:"
   }
 };
 
-let currentSiteLang = 'en';
+let currentLanguage = 'en';
 let isDictating = false;
 let simLang = 'ar';
-let recognition = null;
+let speechRecognizer = null;
 
-// Audio Visualizer Canvas Setup
-const canvas = document.getElementById('miniEqCanvas');
+// Audio EQ Visualizer
+const canvas = document.getElementById('eqCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 let eqBars = Array(8).fill(3);
 let eqPhase = 0;
 
-function animateMiniEq() {
+function drawEqualizer() {
   if (!ctx || !canvas) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   eqPhase += 0.2;
@@ -98,28 +101,57 @@ function animateMiniEq() {
     ctx.roundRect(x, y, barW, eqBars[i], 1.5);
     ctx.fill();
   }
-  requestAnimationFrame(animateMiniEq);
+  requestAnimationFrame(drawEqualizer);
 }
-animateMiniEq();
+drawEqualizer();
 
-// Site Language Dropdown Switcher
-function toggleSiteLangMenu() {
-  const menu = document.getElementById('siteLangMenu');
+// Web Audio API Tones
+function playChime(type) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'start') {
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } else {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    }
+  } catch(e) {}
+}
+
+// Language Switch Dropdown
+function toggleLangMenu() {
+  const menu = document.getElementById('langDropdownMenu');
   if (menu) menu.classList.toggle('show');
 }
 
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.lang-switch-dropdown')) {
-    const menu = document.getElementById('siteLangMenu');
+  if (!e.target.closest('.lang-picker')) {
+    const menu = document.getElementById('langDropdownMenu');
     if (menu) menu.classList.remove('show');
   }
 });
 
-function setSiteLanguage(lang) {
-  currentSiteLang = lang;
+function changeLanguage(lang) {
+  currentLanguage = lang;
   const root = document.getElementById('htmlRoot');
-  const label = document.getElementById('currentSiteLangLabel');
-  
+  const label = document.getElementById('activeLangLabel');
+
   if (lang === 'ar') {
     root.dir = 'rtl';
     root.lang = 'ar';
@@ -134,28 +166,29 @@ function setSiteLanguage(lang) {
     label.textContent = 'English';
   }
 
-  const dict = translations[lang] || translations.en;
+  const dict = i18n[lang] || i18n.en;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (dict[key]) el.textContent = dict[key];
   });
 
-  const menu = document.getElementById('siteLangMenu');
+  const menu = document.getElementById('langDropdownMenu');
   if (menu) menu.classList.remove('show');
 }
 
-// 1-Line Pill Controls
-function toggleWebDictation() {
+// 1-Line Win+H Simulator Dictation
+function toggleSimRecording() {
   if (!isDictating) {
-    startBrowserMic();
+    startListening();
   } else {
-    stopBrowserMic();
+    stopListening();
   }
 }
 
-function cycleSimulatorLang() {
-  const label = document.getElementById('pillLangLabel');
-  const editor = document.getElementById('virtualEditor');
+function switchSimLanguage() {
+  const label = document.getElementById('pillLangText');
+  const editor = document.getElementById('liveEditor');
+
   if (simLang === 'ar') {
     simLang = 'en';
     label.textContent = 'EN';
@@ -171,17 +204,18 @@ function cycleSimulatorLang() {
   }
 }
 
-function startBrowserMic() {
+function startListening() {
+  playChime('start');
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRec) {
     try {
-      recognition = new SpeechRec();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = simLang === 'ar' ? 'ar-SA' : (simLang === 'ku' ? 'ar-IQ' : 'en-US');
+      speechRecognizer = new SpeechRec();
+      speechRecognizer.continuous = true;
+      speechRecognizer.interimResults = true;
+      speechRecognizer.lang = simLang === 'ar' ? 'ar-SA' : (simLang === 'ku' ? 'ar-IQ' : 'en-US');
 
-      recognition.onstart = () => setPillState(true);
-      recognition.onresult = (e) => {
+      speechRecognizer.onstart = () => updatePillUI(true);
+      speechRecognizer.onresult = (e) => {
         let finalText = '';
         for (let i = e.resultIndex; i < e.results.length; ++i) {
           if (e.results[i].isFinal) {
@@ -189,31 +223,32 @@ function startBrowserMic() {
           }
         }
         if (finalText) {
-          typeIntoEditor(finalText);
+          typeIntoLiveEditor(finalText);
         }
       };
-      recognition.onerror = () => setPillState(true);
-      recognition.onend = () => { if (isDictating) setPillState(false); };
-      recognition.start();
+      speechRecognizer.onerror = () => updatePillUI(true);
+      speechRecognizer.onend = () => { if (isDictating) updatePillUI(false); };
+      speechRecognizer.start();
     } catch(err) {
-      setPillState(true);
+      updatePillUI(true);
     }
   } else {
-    setPillState(true);
+    updatePillUI(true);
   }
 }
 
-function stopBrowserMic() {
-  if (recognition) {
-    try { recognition.stop(); } catch(e){}
+function stopListening() {
+  playChime('stop');
+  if (speechRecognizer) {
+    try { speechRecognizer.stop(); } catch(e){}
   }
-  setPillState(false);
+  updatePillUI(false);
 }
 
-function setPillState(active) {
+function updatePillUI(active) {
   isDictating = active;
   const dot = document.getElementById('pillDot');
-  const mic = document.getElementById('pillMic');
+  const mic = document.getElementById('pillMicBtn');
   const icon = document.getElementById('pillMicIcon');
 
   if (active) {
@@ -227,8 +262,8 @@ function setPillState(active) {
   }
 }
 
-// Voice Command Replacer & Fast Typing
-const voiceCmds = [
+// Voice Command Replacement Map
+const voiceCommandReplacements = [
   { p: /\b(فاصلة|فاصله)\b/gi, r: '،' },
   { p: /\b(نقطة|نقطه)\b/gi, r: '.' },
   { p: /\b(علامة استفهام|علامه استفهام)\b/gi, r: '؟' },
@@ -240,11 +275,11 @@ const voiceCmds = [
   { p: /\b(بريدي الإلكتروني|بريدي)\b/gi, r: 'myemail@domain.com' }
 ];
 
-function typeIntoEditor(raw) {
+function typeIntoLiveEditor(raw) {
   let text = raw;
-  voiceCmds.forEach(c => { text = text.replace(c.p, c.r); });
+  voiceCommandReplacements.forEach(c => { text = text.replace(c.p, c.r); });
 
-  const editor = document.getElementById('virtualEditor');
+  const editor = document.getElementById('liveEditor');
   let idx = 0;
   function step() {
     if (idx < text.length) {
@@ -259,45 +294,50 @@ function typeIntoEditor(raw) {
   step();
 }
 
-function simulatePhrase(phrase, lang) {
+function triggerPhrase(phrase, lang) {
   if (lang) {
     simLang = lang;
-    document.getElementById('pillLangLabel').textContent = lang.toUpperCase();
-    document.getElementById('virtualEditor').dir = lang === 'en' ? 'ltr' : 'rtl';
+    document.getElementById('pillLangText').textContent = lang.toUpperCase();
+    document.getElementById('liveEditor').dir = lang === 'en' ? 'ltr' : 'rtl';
   }
 
-  setPillState(true);
+  updatePillUI(true);
+  playChime('start');
+
   setTimeout(() => {
-    setPillState(false);
-    typeIntoEditor(phrase);
+    updatePillUI(false);
+    playChime('stop');
+    typeIntoLiveEditor(phrase);
   }, 350);
 }
 
-function clearVirtualEditor() {
-  document.getElementById('virtualEditor').value = '';
+function clearEditor() {
+  document.getElementById('liveEditor').value = '';
 }
 
-function copyVirtualEditor() {
-  const ed = document.getElementById('virtualEditor');
+function copyEditor() {
+  const ed = document.getElementById('liveEditor');
   navigator.clipboard.writeText(ed.value);
-  const btn = document.getElementById('copyEditorBtn');
+  const btn = document.getElementById('editorCopyBtn');
   btn.textContent = '✅ Copied!';
   setTimeout(() => { btn.textContent = '📋 Copy'; }, 1500);
 }
 
-function copyChecksum() {
-  const code = document.getElementById('checksumCode').textContent;
+function copyHash() {
+  const code = document.getElementById('hashVal').textContent;
   navigator.clipboard.writeText(code);
-  alert('Checksum copied to clipboard:\n' + code);
+  const btn = document.getElementById('copyHashBtn');
+  btn.textContent = '✅ Copied!';
+  setTimeout(() => { btn.textContent = '📋 Copy'; }, 1500);
 }
 
-function openSimSettings() {
-  alert("SpeechFlow Settings\n• Default Language: Trilingual (AR/EN/KU)\n• Engine: Local faster-whisper (Offline) + Deepgram Nova-2\n• Hotkey: Ctrl + Shift + Space");
+function showSimConfig() {
+  alert("SpeechFlow Settings\n• Default Language: Trilingual (AR / EN / KU)\n• Engine: Local faster-whisper (Offline) + Deepgram Nova-2\n• Global Hotkey: Ctrl + Shift + Space");
 }
 
-// Auto-resolve dynamic GitHub release to prevent 404
-async function updateDownloadLink() {
-  const dlBtn = document.getElementById('mainDownloadBtn');
+// GitHub API Auto-Resolver
+async function autoResolveRelease() {
+  const dlBtn = document.getElementById('dlBtn');
   if (!dlBtn) return;
   try {
     const res = await fetch('https://api.github.com/repos/NashatShamsadyn7/speechflow/releases/latest');
@@ -308,8 +348,6 @@ async function updateDownloadLink() {
         dlBtn.href = exe.browser_download_url;
       }
     }
-  } catch(e) {
-    // Falls back to direct tag link
-  }
+  } catch(e) {}
 }
-document.addEventListener('DOMContentLoaded', updateDownloadLink);
+document.addEventListener('DOMContentLoaded', autoResolveRelease);
