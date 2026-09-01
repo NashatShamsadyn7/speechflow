@@ -19,6 +19,25 @@ const micIcon = document.getElementById('micIcon');
 const canvas = document.getElementById('audioCanvas');
 const ctx = canvas.getContext('2d');
 
+// Dynamic GitHub Release 404-Prevention Resolver
+async function resolveLatestRelease() {
+  const downloadBtn = document.getElementById('downloadBtn');
+  if (!downloadBtn) return;
+  try {
+    const res = await fetch('https://api.github.com/repos/NashatShamsadyn7/speechflow/releases/latest');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.assets && data.assets.length > 0) {
+        const exeAsset = data.assets.find(a => a.name.endsWith('.exe')) || data.assets[0];
+        downloadBtn.href = exeAsset.browser_download_url;
+      }
+    }
+  } catch (err) {
+    console.log('Using default release fallback URL');
+  }
+}
+document.addEventListener('DOMContentLoaded', resolveLatestRelease);
+
 // Voice Command Map
 const voiceCommandMap = [
   { pattern: /\b(فاصلة|فاصله)\b/gi, rep: '،' },
