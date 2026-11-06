@@ -94,7 +94,7 @@ public sealed class DictationController : IDisposable
 
         ISpeechRecognizer recognizer = Settings.Engine == "groq" ? new GroqRecognizer(Settings.GroqKey) : _local;
         var language = Settings.Language;
-        var session = new SpeechSession(recognizer, Settings.RecognizerLanguage);
+        var session = new SpeechSession(recognizer, Settings.RecognizerLanguage, Settings.LivePreview ? _local : null);
         var sessionText = new StringBuilder();
 
         session.Preparing += message => _ui.BeginInvoke(() =>
@@ -113,6 +113,12 @@ public sealed class DictationController : IDisposable
             if (session != _session) return;
             _lastActivity = DateTime.UtcNow;
             PreviewChanged?.Invoke("…");
+        });
+        session.Interim += text => _ui.BeginInvoke(() =>
+        {
+            if (session != _session) return;
+            _lastActivity = DateTime.UtcNow;
+            PreviewChanged?.Invoke(text + " …");
         });
         session.Transcribing += busy => _ui.BeginInvoke(() =>
         {

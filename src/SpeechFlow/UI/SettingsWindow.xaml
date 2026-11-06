@@ -55,8 +55,13 @@
                             </TextBlock>
                         </StackPanel>
 
+                        <CheckBox x:Name="LivePreviewBox" Margin="0,12,0,0" Click="OnLivePreviewChanged"
+                                  Content="Show words live on the bar while I speak" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Uses a small on-device model for the live words (downloaded once). The final text still comes from the engine above." />
+
                         <StackPanel x:Name="LocalPanel">
-                            <TextBlock Style="{StaticResource Label}" Text="Speech model (downloaded once)" />
+                            <TextBlock Style="{StaticResource Label}" Text="On-device model (downloaded once)" />
                             <ComboBox x:Name="ModelBox" SelectionChanged="OnModelChanged" />
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="DownloadButton" Content="Download" Padding="12,3" Click="OnDownload" />

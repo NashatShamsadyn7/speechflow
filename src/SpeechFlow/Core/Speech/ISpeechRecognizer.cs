@@ -17,7 +17,7 @@ public interface ISpeechRecognizer
 /// <summary>A problem the user has to fix (bad key, no disk space…); stops the session.</summary>
 public sealed class SpeechException(string message, Exception? inner = null) : Exception(message, inner);
 
-static class Hallucinations
+public static class Hallucinations
 {
     // Whisper was trained on subtitled video, so on noise it sometimes "hears" subtitle credits.
     static readonly string[] Phrases =
@@ -26,6 +26,17 @@ static class Hallucinations
         "thanks for watching", "thank you for watching", "subtitles by the amara.org community",
         "please subscribe", "you",
     };
+
+    // "send the report, and send the report, and send the report…" → one copy.
+    static readonly System.Text.RegularExpressions.Regex Loop =
+        new(@"(.{8,}?)(?:\s*\1){2,}", System.Text.RegularExpressions.RegexOptions.Singleline);
+
+    /// <summary>Collapses Whisper's repetition loops and drops known noise phrases.</summary>
+    public static string Clean(string text)
+    {
+        var collapsed = Loop.Replace(text.Trim(), "$1").Trim();
+        return IsHallucination(collapsed) ? "" : collapsed;
+    }
 
     public static bool IsHallucination(string text)
     {

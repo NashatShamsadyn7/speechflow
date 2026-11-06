@@ -26,16 +26,26 @@ public class LocalWhisperCheck(ITestOutputHelper output)
         pcm.AddRange(new byte[32000]);
 
         using var recognizer = new LocalWhisperRecognizer(ModelStore.Find("small"));
-        var session = new SpeechSession(recognizer, "en");
-        var finals = new List<string>();
-        var done = new TaskCompletionSource();
+        var session = new SpeechSession(recognizer, "en", previewRecognizer: recognizer);
         var clock = new Stopwatch();
+        var finals = new List<string>();
+        var previews = new List<string>();
+        session.Interim += t => { previews.Add(t); output.WriteLine($"  [{clock.ElapsedMilliseconds} ms] preview: {t}"); };
+        session.SpeechStarted += () => output.WriteLine($"  [{clock.ElapsedMilliseconds} ms] speech started");
+        session.Transcribing += b => output.WriteLine($"  [{clock.ElapsedMilliseconds} ms] final transcribe {(b ? "begin" : "end")}");
+        var done = new TaskCompletionSource();
         session.Preparing += m => { if (!m.Contains('%') || m.EndsWith("0%")) output.WriteLine(m); };
         session.Ready += () => { output.WriteLine("ready"); clock.Start(); };
         session.Final += t => { finals.Add(t); output.WriteLine($"[{clock.ElapsedMilliseconds} ms] {t}"); };
         session.Failed += m => output.WriteLine("FAILED " + m);
         session.Completed += () => done.TrySetResult();
         session.Start();
+
+        // Wait for the model, then feed audio in real time (50 ms per chunk) like a microphone.
+        var ready = new TaskCompletionSource();
+        session.Ready += () => ready.TrySetResult();
+        await ready.Task.WaitAsync(TimeSpan.FromMinutes(10));
+        await Task.Delay(500);
 
         var bytes = pcm.ToArray();
         for (int i = 0; i + 1600 <= bytes.Length; i += 1600)
@@ -44,10 +54,12 @@ public class LocalWhisperCheck(ITestOutputHelper output)
             double sum = 0;
             for (int j = 0; j < chunk.Length; j += 2) { double s = (short)(chunk[j] | (chunk[j + 1] << 8)) / 32768.0; sum += s * s; }
             session.Write(chunk, (float)Math.Sqrt(sum / 800));
+            await Task.Delay(50);
         }
         session.Complete();
         await done.Task.WaitAsync(TimeSpan.FromMinutes(10));
 
+        Assert.NotEmpty(previews);
         var all = string.Join(" ", finals);
         Assert.Contains("SpeechFlow", all, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manager", all, StringComparison.OrdinalIgnoreCase);

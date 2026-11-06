@@ -70,8 +70,7 @@ public sealed class GroqRecognizer(string apiKey) : ISpeechRecognizer
         }
 
         using var doc = JsonDocument.Parse(body);
-        var text = doc.RootElement.GetProperty("text").GetString()?.Trim() ?? "";
-        return Hallucinations.IsHallucination(text) ? "" : text;
+        return Hallucinations.Clean(doc.RootElement.GetProperty("text").GetString() ?? "");
     }
 }
 

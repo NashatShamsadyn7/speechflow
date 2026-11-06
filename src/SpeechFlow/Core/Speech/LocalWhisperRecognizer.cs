@@ -97,8 +97,7 @@ public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
             await foreach (var segment in processor.ProcessAsync(samples, ct))
                 text.Append(segment.Text);
 
-            var result = text.ToString().Trim();
-            return Hallucinations.IsHallucination(result) ? "" : result;
+            return Hallucinations.Clean(text.ToString());
         }
         finally
         {
@@ -124,11 +123,17 @@ public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
         var key = $"{language ?? "auto"}:{audioContext}";
         if (_processors.TryGetValue(key, out var existing)) return existing;
 
+        // ~12 tokens per second covers fast Arabic speech; the cap stops runaway repetition loops,
+        // which a shortened audio context makes more likely.
+        int maxTokens = audioContext / 50 * 12 + 16;
         var builder = _factory!.CreateBuilder()
             .WithLanguage(language ?? "auto")
             .WithAudioContextSize(audioContext)
             .WithThreads(Math.Max(1, Environment.ProcessorCount - 1))
-            .WithNoContext(); // each utterance stands alone; carrying context makes Whisper repeat itself
+            .WithNoContext()       // each utterance stands alone; carrying context makes Whisper repeat itself
+            .WithSingleSegment()   // phrases are short; one segment decodes faster
+            .WithMaxTokensPerSegment(maxTokens)
+            .WithTemperatureInc(0); // no fallback re-decoding: one pass, predictable latency
         if (language is not null && Prompts.TryGetValue(language, out var prompt))
             builder = builder.WithPrompt(prompt);
 

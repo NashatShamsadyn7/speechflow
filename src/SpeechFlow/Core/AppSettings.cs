@@ -15,6 +15,8 @@ public sealed class AppSettings
     public string Engine { get; set; } = "groq";
     /// <summary>Id from <see cref="Speech.ModelStore.Models"/>, used by the local engine.</summary>
     public string LocalModel { get; set; } = "small";
+    /// <summary>Show words on the bar while speaking, using the local model (downloaded once).</summary>
+    public bool LivePreview { get; set; } = true;
 
     /// <summary>"ar", "en" or "auto".</summary>
     public string Language { get; set; } = "ar";

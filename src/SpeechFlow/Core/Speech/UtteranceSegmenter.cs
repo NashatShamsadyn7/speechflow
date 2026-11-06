@@ -27,6 +27,12 @@ public sealed class UtteranceSegmenter
 
     public bool InSpeech { get; private set; }
 
+    /// <summary>Length of the phrase in progress, in milliseconds.</summary>
+    public int LengthMs => InSpeech ? _lengthMs : 0;
+
+    /// <summary>Copy of the phrase in progress, for a live preview.</summary>
+    public byte[] Snapshot() => _current.ToArray();
+
     /// <returns>A finished utterance, or null.</returns>
     public byte[]? Add(byte[] chunk, float rms)
     {

@@ -31,6 +31,7 @@ public partial class SettingsWindow : Window
             ModelBox.Items.Add(new ComboBoxItem { Tag = model.Id, Content = model.DisplayName });
 
         GroqKeyBox.Password = s.GroqKey;
+        LivePreviewBox.IsChecked = s.LivePreview;
         Select(EngineBox, s.Engine);
         Select(ModelBox, s.LocalModel);
         Select(LanguageBox, s.Language);
@@ -65,12 +66,15 @@ public partial class SettingsWindow : Window
 
     void OnEngineChanged(object sender, SelectionChangedEventArgs e) => UpdateEnginePanels();
 
+    void OnLivePreviewChanged(object sender, RoutedEventArgs e) => UpdateEnginePanels();
+
     void OnModelChanged(object sender, SelectionChangedEventArgs e) => UpdateModelStatus();
 
     void UpdateEnginePanels()
     {
         if (LocalPanel is null) return; // SelectionChanged fires during InitializeComponent
-        LocalPanel.Visibility = SelectedTag(EngineBox, "groq") == "local" ? Visibility.Visible : Visibility.Collapsed;
+        bool needsModel = SelectedTag(EngineBox, "groq") == "local" || LivePreviewBox.IsChecked == true;
+        LocalPanel.Visibility = needsModel ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void UpdateModelStatus()
@@ -171,6 +175,7 @@ public partial class SettingsWindow : Window
         s.GroqKey = GroqKeyBox.Password.Trim();
         s.Engine = SelectedTag(EngineBox, "groq");
         s.LocalModel = SelectedModel.Id;
+        s.LivePreview = LivePreviewBox.IsChecked == true;
         s.Language = SelectedTag(LanguageBox, "ar");
         s.TypingMode = SelectedTag(TypingModeBox, "type");
         s.PolishMode = SelectedTag(PolishModeBox, "grammar");
