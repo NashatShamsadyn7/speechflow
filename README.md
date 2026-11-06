@@ -1,4 +1,4 @@
-# SpeechFlow
+﻿# SpeechFlow
 
 Real-time voice typing for Windows 10/11, in Arabic and English. Press a shortcut, speak, and the
 text appears wherever your cursor is: Word, Chrome, WhatsApp, VS Code, any app.
@@ -56,8 +56,7 @@ dotnet publish src/SpeechFlow -c Release -r win-x64 --self-contained -p:PublishS
 iscc installer\SpeechFlow.iss
 ```
 
-Pushing a tag like `v3.0.0` makes GitHub Actions run the tests, build the installer and a portable exe,
-and attach both to a GitHub release.
+To publish a release from this PC, run `.\release.ps1 -Version 3.0.1`. It runs the tests, builds the installer and a portable exe, creates the GitHub release, and replaces the download on the website.
 
 ## Project layout
 
@@ -69,7 +68,7 @@ src/SpeechFlow/
   Core/Speech/             phrase splitting, Groq and local Whisper recognizers, model downloads
 tests/SpeechFlow.Tests/    unit tests (set SPEECHFLOW_SAMPLES to run the local Whisper check)
 installer/SpeechFlow.iss   per-user Inno Setup installer (no admin)
-public/                    landing page (Firebase Hosting)
+public/                    old address iosbb5.web.app, now forwards to the main site
 ```
 
 ## Known limits
