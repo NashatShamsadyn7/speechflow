@@ -81,7 +81,7 @@ public static class SettingsStore
             {
                 var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(AppPaths.SettingsFile)) ?? new();
                 settings.GroqKey = Unprotect(settings.GroqKey);
-                ClearLegacyHotkeys(settings);
+                if (ClearLegacyHotkeys(settings)) Save(settings);
                 return settings;
             }
         }
@@ -100,13 +100,15 @@ public static class SettingsStore
     }
 
     /// <summary>3.0 shipped extra default hotkeys that clash with Excel and VS Code; drop them unless the user changed them.</summary>
-    static void ClearLegacyHotkeys(AppSettings s)
+    /// <returns>True if the settings changed and should be saved.</returns>
+    static bool ClearLegacyHotkeys(AppSettings s)
     {
-        if (s.LegacyHotkeysCleared) return;
+        if (s.LegacyHotkeysCleared) return false;
         if (s.LanguageHotkey == "Ctrl+Shift+L") s.LanguageHotkey = "";
         if (s.UndoHotkey == "Ctrl+Shift+Backspace") s.UndoHotkey = "";
         if (s.PolishHotkey == "Ctrl+Shift+K") s.PolishHotkey = "";
         s.LegacyHotkeysCleared = true;
+        return true;
     }
 
     static string Protect(string value)

@@ -35,6 +35,8 @@ Name: "startup"; Description: "Start SpeechFlow when Windows starts"; GroupDescr
 
 [Files]
 Source: "..\publish\SpeechFlow.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Whisper's native libraries must sit next to the exe (see SpeechFlow.csproj).
+Source: "..\publish\runtimes\*"; DestDir: "{app}\runtimes"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{autoprograms}\SpeechFlow"; Filename: "{app}\SpeechFlow.exe"

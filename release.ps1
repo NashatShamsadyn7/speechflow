@@ -41,8 +41,9 @@ dotnet publish src/SpeechFlow/SpeechFlow.csproj -c Release -r win-x64 --self-con
 & $iscc /Q "/DAppVersion=$Version" installer\SpeechFlow.iss; Check "Installer"
 
 $setup = "dist\SpeechFlow-Setup-$Version.exe"
-$portable = "dist\SpeechFlow-Portable-$Version.exe"
-Copy-Item publish\SpeechFlow.exe $portable
+# The portable build is a zip: Whisper's native DLLs must sit next to the exe (see SpeechFlow.csproj).
+$portable = "dist\SpeechFlow-Portable-$Version.zip"
+Compress-Archive -Path publish\SpeechFlow.exe, publish\runtimes -DestinationPath $portable -Force
 
 Step "GitHub release v$Version"
 git tag "v$Version"; Check "Tag"

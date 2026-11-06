@@ -12,7 +12,7 @@
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <AssemblyName>SpeechFlow</AssemblyName>
     <RootNamespace>SpeechFlow</RootNamespace>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <Product>SpeechFlow</Product>
     <Company>Nashat Shamsadyn</Company>
     <Copyright>Copyright (c) 2026 Nashat Shamsadyn</Copyright>
@@ -29,5 +29,20 @@
   <ItemGroup>
     <Resource Include="Assets\icon.ico" />
   </ItemGroup>
+
+  <!--
+    Whisper.net loads its native DLLs from runtimes/<rid>/ next to the exe, so they can't live inside
+    the single-file bundle (they would be extracted to a temp folder it never looks in).
+    Publish only the x64 ones and keep them beside SpeechFlow.exe.
+  -->
+  <Target Name="KeepWhisperNativesBesideExe" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+          Condition="$([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('runtimes/')) And !$([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('runtimes/win-x64/'))" />
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+          Condition="$([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('runtimes/win-x64/'))"
+          ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
 
 </Project>
