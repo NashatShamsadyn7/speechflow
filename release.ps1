@@ -14,7 +14,9 @@ param(
     [string]$Notes = "SpeechFlow $Version"
 )
 
-$ErrorActionPreference = 'Stop'
+# Not 'Stop': Windows PowerShell treats git's normal progress output on stderr as an error.
+# Every native command is checked with Check instead.
+$ErrorActionPreference = 'Continue'
 Set-Location $PSScriptRoot
 
 function Step($text) { Write-Host "`n== $text" -ForegroundColor Cyan }
