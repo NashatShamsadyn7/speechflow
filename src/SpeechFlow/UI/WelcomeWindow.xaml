@@ -1,46 +1,71 @@
-<Window x:Class="SpeechFlow.UI.WelcomeWindow"
+﻿<Window x:Class="SpeechFlow.UI.WelcomeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Welcome to SpeechFlow" Width="520" Height="520" ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14"
-        Icon="/Assets/icon.ico">
+        Title="Welcome to SpeechFlow" Width="540" Height="580" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" ThemeMode="Dark"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14" Icon="pack://application:,,,/SpeechFlow;component/Assets/icon.ico">
     <Window.Resources>
+        <ResourceDictionary>
+        <!-- SpeechFlow blue instead of the user's Windows accent colour (defined here so they win over the Fluent theme). -->
+        <SolidColorBrush x:Key="AccentButtonBackground" Color="#38BDF8" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#7DD3FC" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#0EA5E9" />
+        <SolidColorBrush x:Key="AccentButtonForeground" Color="#0B1220" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#0B1220" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#0B1220" />
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#38BDF8" />
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#7DD3FC" />
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#0EA5E9" />
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#38BDF8" />
+        <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#38BDF8" />
+        <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#7DD3FC" />
+        <SolidColorBrush x:Key="Muted" Color="#9CA3AF" />
+        <SolidColorBrush x:Key="Accent" Color="#38BDF8" />
         <Style x:Key="Title" TargetType="TextBlock">
             <Setter Property="FontSize" Value="22" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Margin" Value="0,0,0,6" />
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <!-- Big selectable card. -->
         <Style x:Key="Card" TargetType="RadioButton">
             <Setter Property="Margin" Value="0,10,0,0" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="#F3F4F6" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Box" CornerRadius="10" BorderThickness="2" BorderBrush="#E5E7EB" Background="White" Padding="16,12">
+                        <Border x:Name="Box" CornerRadius="10" BorderThickness="2" BorderBrush="#374151" Background="#1F2430" Padding="16,12" TextElement.Foreground="{TemplateBinding Foreground}">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#93C5FD" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#4B5563" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="#0EA5E9" />
-                                <Setter TargetName="Box" Property="Background" Value="#F0F9FF" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#38BDF8" />
+                                <Setter TargetName="Box" Property="Background" Value="#0B2A3A" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="StepNumber" TargetType="Border">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Background" Value="#374151" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+            </ResourceDictionary>
     </Window.Resources>
 
     <DockPanel Margin="28,24" LastChildFill="True">
-        <!-- Step dots -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,18">
             <Ellipse x:Name="Dot0" Width="10" Height="10" Margin="0,0,6,0" />
             <Ellipse x:Name="Dot1" Width="10" Height="10" Margin="0,0,6,0" />
@@ -49,19 +74,20 @@
         </StackPanel>
 
         <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
-            <Button x:Name="BackButton" Content="Back" Width="90" Height="32" HorizontalAlignment="Left" Click="OnBack" />
-            <Button x:Name="NextButton" Content="Next" Width="110" Height="32" HorizontalAlignment="Right" IsDefault="True" Click="OnNext" />
+            <Button x:Name="BackButton" Content="Back" MinWidth="90" HorizontalAlignment="Left" Click="OnBack" />
+            <Button x:Name="NextButton" Content="Next" MinWidth="110" HorizontalAlignment="Right" IsDefault="True"
+                    Style="{DynamicResource AccentButtonStyle}" Click="OnNext" />
         </Grid>
 
         <Grid>
             <!-- 1. Language -->
             <StackPanel x:Name="Step0">
                 <TextBlock Style="{StaticResource Title}" Text="Which language do you speak?" />
-                <TextBlock Style="{StaticResource Hint}" Text="You can switch any time with Ctrl+Shift+L or the button on the bar." />
+                <TextBlock Style="{StaticResource Hint}" Text="You can switch any time with the language button on the bar." />
                 <RadioButton x:Name="ArabicCard" Style="{StaticResource Card}" GroupName="lang" IsChecked="True">
                     <StackPanel>
                         <TextBlock Text="العربية" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource Hint}" Text="Typed the way you speak, with numbers like ٣٥" />
+                        <TextBlock Style="{StaticResource Hint}" Text="Typed the way you speak it, with numbers like ٣٥" />
                     </StackPanel>
                 </RadioButton>
                 <RadioButton x:Name="EnglishCard" Style="{StaticResource Card}" GroupName="lang">
@@ -76,52 +102,73 @@
             <StackPanel x:Name="Step1">
                 <TextBlock Style="{StaticResource Title}" Text="Let's test your microphone" />
                 <TextBlock Style="{StaticResource Hint}" Text="Say something. The bar should move when you talk." />
-                <ComboBox x:Name="MicrophoneBox" Margin="0,18,0,0" Height="30" SelectionChanged="OnMicrophoneChanged" />
-                <ProgressBar x:Name="MicLevel" Height="12" Margin="0,16,0,0" Maximum="1" Foreground="#0EA5E9" />
+                <ComboBox x:Name="MicrophoneBox" Margin="0,18,0,0" HorizontalAlignment="Stretch" SelectionChanged="OnMicrophoneChanged" />
+                <ProgressBar x:Name="MicLevel" Height="10" Margin="0,18,0,0" Maximum="1" />
                 <TextBlock x:Name="MicStatus" Margin="0,12,0,0" Style="{StaticResource Hint}" Text="Waiting for your voice…" />
             </StackPanel>
 
             <!-- 3. Engine -->
             <StackPanel x:Name="Step2">
                 <TextBlock Style="{StaticResource Title}" Text="How should SpeechFlow listen?" />
-                <RadioButton x:Name="CloudCard" Style="{StaticResource Card}" GroupName="engine" IsChecked="True" Checked="OnEngineChanged">
+                <RadioButton x:Name="CloudCard" Style="{StaticResource Card}" GroupName="engine" IsChecked="True">
                     <StackPanel>
                         <TextBlock Text="Cloud — best and fastest (recommended)" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource Hint}" Text="Needs a free key. No credit card, takes one minute." />
-                        <StackPanel x:Name="KeyPanel" Margin="0,10,0,0">
-                            <Button Content="1. Get my free key  ↗" HorizontalAlignment="Left" Padding="12,4" Click="OnGetKey" />
-                            <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,4" Text="2. Sign in with Google, click “Create API Key”, copy it, and paste it here:" />
-                            <PasswordBox x:Name="KeyBox" Height="28" />
-                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="Free. Needs a key from Groq — takes one minute." />
                     </StackPanel>
                 </RadioButton>
-                <RadioButton x:Name="LocalCard" Style="{StaticResource Card}" GroupName="engine" Checked="OnEngineChanged">
+                <RadioButton x:Name="LocalCard" Style="{StaticResource Card}" GroupName="engine">
                     <StackPanel>
                         <TextBlock Text="On this PC — private, works offline" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource Hint}" Text="No key. Downloads a 190 MB model the first time you dictate." />
+                        <TextBlock Style="{StaticResource Hint}" Text="No key. Downloads 190 MB once, in the background." />
                     </StackPanel>
                 </RadioButton>
-                <CheckBox x:Name="LivePreviewBox" Margin="2,14,0,0" IsChecked="True"
-                          Content="Show words live while I speak (uses the 190 MB model)" />
-                <TextBlock x:Name="EngineError" Margin="0,8,0,0" Foreground="#DC2626" TextWrapping="Wrap" />
+                <CheckBox x:Name="LivePreviewBox" Margin="2,14,0,0" IsChecked="True">
+                    <TextBlock TextWrapping="Wrap" Text="Show my words live while I speak (downloads 190 MB once, in the background)" />
+                </CheckBox>
+            </StackPanel>
+
+            <!-- 3b. Key (cloud only) -->
+            <StackPanel x:Name="StepKey">
+                <TextBlock Style="{StaticResource Title}" Text="Get your free key" />
+                <TextBlock Style="{StaticResource Hint}" Text="No credit card. SpeechFlow picks the key up by itself when you copy it." />
+
+                <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                    <Border Style="{StaticResource StepNumber}"><TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" /></Border>
+                    <StackPanel>
+                        <Button Content="Open Groq  ↗" Style="{DynamicResource AccentButtonStyle}" HorizontalAlignment="Left" Click="OnGetKey" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="Sign in with Google (or email)." />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Border Style="{StaticResource StepNumber}"><TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" /></Border>
+                    <TextBlock Style="{StaticResource Hint}" Width="400" Text="Click “Create API Key”, type any name (e.g. SpeechFlow), then click “Submit”." />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Border Style="{StaticResource StepNumber}"><TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" /></Border>
+                    <TextBlock Style="{StaticResource Hint}" Width="400" Text="Click “Copy”. That's it — come back here." />
+                </StackPanel>
+
+                <PasswordBox x:Name="KeyBox" Margin="0,20,0,0" PasswordChanged="OnKeyChanged" />
+                <TextBlock x:Name="KeyStatus" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                           Text="Waiting for you to copy the key…" />
             </StackPanel>
 
             <!-- 4. Done -->
             <StackPanel x:Name="Step3">
                 <TextBlock Style="{StaticResource Title}" Text="You're ready 🎉" />
                 <TextBlock Style="{StaticResource Hint}" Text="Click into any app (WhatsApp, Word, Chrome…) and:" />
-                <Border Margin="0,18,0,0" Padding="16" CornerRadius="10" Background="#F3F4F6">
+                <Border Margin="0,18,0,0" Padding="16" CornerRadius="10" Background="#1F2430">
                     <StackPanel>
                         <TextBlock x:Name="TapText" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource Hint}" Text="Speak, pause, and your words are typed. Tap again to stop." Margin="0,2,0,12" />
                         <TextBlock x:Name="HoldText" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource Hint}" Text="Talk while holding; let go and it's typed." Margin="0,2,0,12" />
-                        <TextBlock Text="Ctrl+Shift+L — switch AR → EN → AR→EN (translate)" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource Hint}" Text="Translate mode: speak Arabic, get English." Margin="0,2,0,0" />
+                        <TextBlock Text="AR / EN / AR→EN button on the bar" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Hint}" Text="Switch language, or speak Arabic and get English." Margin="0,2,0,0" />
                     </StackPanel>
                 </Border>
                 <TextBlock Style="{StaticResource Hint}" Margin="0,14,0,0"
-                           Text="SpeechFlow waits in the system tray (near the clock). Click its icon for settings." />
+                           Text="The bar only appears while you dictate. SpeechFlow waits in the tray near the clock (under ^) — click its icon for settings." />
             </StackPanel>
         </Grid>
     </DockPanel>

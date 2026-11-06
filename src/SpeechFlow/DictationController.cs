@@ -64,6 +64,8 @@ public sealed class DictationController : IDisposable
     public event Action<string>? PreviewChanged;
     public event Action? SettingsRequested;
     public event Action<string>? Notify;
+    /// <summary>Progress of background work such as a model download; empty text when it's finished.</summary>
+    public event Action<string>? BackgroundStatus;
 
     public DictationController(Dispatcher ui)
     {
@@ -75,6 +77,12 @@ public sealed class DictationController : IDisposable
 
         _audio.ChunkAvailable += OnAudioChunk;
         _audio.Failed += message => _ui.BeginInvoke(() => Fail(message));
+        _typer.Blocked += () => _ui.BeginInvoke(() =>
+        {
+            const string message = "Windows won't let SpeechFlow type here: this app is running as administrator.";
+            Status(message, StatusKind.Error);
+            Notify?.Invoke(message);
+        });
 
         _autoStop = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => CheckAutoStop(), _ui);
         _autoStop.Start();
@@ -90,6 +98,40 @@ public sealed class DictationController : IDisposable
     }
 
     public void RequestSettings() => SettingsRequested?.Invoke();
+
+    /// <summary>
+    /// Downloads and loads the on-device model in the background when it will be needed
+    /// (on-device engine or live preview), so the first dictation doesn't wait for 190 MB.
+    /// </summary>
+    /// <param name="model">Switch to this model first (null keeps the current one).</param>
+    public async void PrefetchLocalModel(WhisperModel? model = null)
+    {
+        bool needed = Settings.Engine == "local" || Settings.LivePreview;
+        if (!needed)
+        {
+            // SetModel may wait for a phrase still being transcribed, so keep it off the UI thread.
+            if (model is not null) _ = Task.Run(() => _local.SetModel(model));
+            return;
+        }
+        bool wasDownloaded = ModelStore.IsDownloaded(model ?? _local.Model);
+        try
+        {
+            var progress = new Progress<string>(m => BackgroundStatus?.Invoke(m));
+            await Task.Run(async () =>
+            {
+                if (model is not null) _local.SetModel(model);
+                await _local.PrepareAsync(progress, default);
+            });
+            BackgroundStatus?.Invoke("");
+            if (!wasDownloaded) Notify?.Invoke("The on-device speech model is ready.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Prefetching the speech model failed", ex);
+            BackgroundStatus?.Invoke("");
+            Notify?.Invoke(ex is SpeechException ? ex.Message : "Couldn't prepare the on-device speech model.");
+        }
+    }
 
     public void Toggle()
     {
@@ -305,13 +347,12 @@ public sealed class DictationController : IDisposable
         SnippetStore.Save(snippets);
         StartupRegistration.Apply(settings.StartWithWindows);
         ApplyToComponents();
-        var model = ModelStore.Find(settings.LocalModel);
-        _ = Task.Run(() => _local.SetModel(model)); // may wait for a phrase still being transcribed
         var failed = RegisterHotkeys();
 
         StateChanged?.Invoke();
         if (wasListening) Start(quiet: true);
         else SetIdleStatus();
+        PrefetchLocalModel(ModelStore.Find(settings.LocalModel));
         return failed;
     }
 
@@ -319,6 +360,12 @@ public sealed class DictationController : IDisposable
     {
         Settings.BarLeft = left;
         Settings.BarTop = top;
+        Save();
+    }
+
+    public void MarkUpdateChecked()
+    {
+        Settings.LastUpdateCheck = DateTime.UtcNow;
         Save();
     }
 

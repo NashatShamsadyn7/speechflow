@@ -15,6 +15,7 @@ public sealed class TrayIcon : IDisposable
     readonly Icon _listeningIcon = Draw(Color.FromArgb(239, 68, 68));
     readonly ToolStripMenuItem _toggleItem;
     readonly ToolStripMenuItem _languageItem;
+    string _background = "";
 
     public TrayIcon(DictationController controller, Action openSettings, Action quit)
     {
@@ -38,15 +39,38 @@ public sealed class TrayIcon : IDisposable
         };
 
         controller.StateChanged += Update;
-        controller.Notify += message => _icon.ShowBalloonTip(5000, "SpeechFlow", message, ToolTipIcon.Warning);
+        controller.Notify += message => _icon.ShowBalloonTip(5000, "SpeechFlow", message, ToolTipIcon.Info);
+        controller.BackgroundStatus += text =>
+        {
+            _background = text;
+            Update();
+        };
         Update();
+    }
+
+    /// <summary>Tells the user the app is running, since the bar stays hidden until they dictate.</summary>
+    public void ShowReady() => _icon.ShowBalloonTip(6000, "SpeechFlow is ready",
+        $"Tap {_controller.Settings.ToggleHotkey} to dictate, or hold it while you talk.", ToolTipIcon.Info);
+
+    public void ShowMessage(string title, string text, Action? onClick = null)
+    {
+        void Clicked(object? sender, EventArgs e)
+        {
+            _icon.BalloonTipClicked -= Clicked;
+            onClick?.Invoke();
+        }
+        if (onClick is not null) _icon.BalloonTipClicked += Clicked;
+        _icon.ShowBalloonTip(8000, title, text, ToolTipIcon.Info);
     }
 
     void Update()
     {
         bool listening = _controller.IsListening;
         _icon.Icon = listening ? _listeningIcon : _idleIcon;
-        _icon.Text = listening ? "SpeechFlow — listening" : $"SpeechFlow — {_controller.Settings.ToggleHotkey} to dictate";
+        var tip = listening ? "SpeechFlow — listening"
+            : _background.Length > 0 ? "SpeechFlow — " + _background
+            : $"SpeechFlow — {_controller.Settings.ToggleHotkey} to dictate";
+        _icon.Text = tip.Length > 63 ? tip[..63] : tip; // Windows limit for tray tooltips
         _toggleItem.Text = listening ? "Stop dictation" : "Start dictation";
         _languageItem.Text = $"Mode: {_controller.ModeLabel} (click to switch)";
     }

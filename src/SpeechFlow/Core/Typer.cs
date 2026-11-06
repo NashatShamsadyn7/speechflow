@@ -21,6 +21,9 @@ public sealed class Typer : IDisposable
     readonly BlockingCollection<Action> _queue = new();
     readonly Thread _thread;
 
+    /// <summary>Windows refused the keystrokes, almost always because the target app runs as administrator.</summary>
+    public event Action? Blocked;
+
     public Typer()
     {
         _thread = new Thread(Run) { IsBackground = true, Name = "SpeechFlow typer" };
@@ -62,7 +65,7 @@ public sealed class Typer : IDisposable
     }
 
     /// <summary>The whole string goes out in a few SendInput calls instead of one sleep per character.</summary>
-    static void SendUnicode(string text)
+    void SendUnicode(string text)
     {
         var inputs = new List<INPUT>(text.Length * 2);
         foreach (char c in text)
@@ -83,7 +86,7 @@ public sealed class Typer : IDisposable
         Send(inputs);
     }
 
-    static void Paste(string text)
+    void Paste(string text)
     {
         string? previous = null;
         Retry(() => { if (Clipboard.ContainsText()) previous = Clipboard.GetText(); });
@@ -107,7 +110,7 @@ public sealed class Typer : IDisposable
         if (previous is not null) Retry(() => Clipboard.SetText(previous));
     }
 
-    static void Send(List<INPUT> inputs)
+    void Send(List<INPUT> inputs)
     {
         int size = Marshal.SizeOf<INPUT>();
         for (int start = 0; start < inputs.Count; start += MaxInputsPerCall)
@@ -118,6 +121,7 @@ public sealed class Typer : IDisposable
             {
                 // Typically UIPI: the target window runs as administrator and we don't.
                 Log.Error($"SendInput delivered {sent}/{batch.Length} inputs (error {Marshal.GetLastWin32Error()})");
+                Blocked?.Invoke();
                 return;
             }
             if (start + MaxInputsPerCall < inputs.Count) Thread.Sleep(5);

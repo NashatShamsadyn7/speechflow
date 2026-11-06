@@ -42,10 +42,16 @@ public sealed class AppSettings
 
     public string PolishMode { get; set; } = "grammar";
 
+    // Only the toggle is on by default: every global hotkey is stolen from all other apps
+    // (Ctrl+Shift+L is Excel's filter and VS Code's select-all-matches, for example).
     public string ToggleHotkey { get; set; } = "Ctrl+Shift+Space";
-    public string LanguageHotkey { get; set; } = "Ctrl+Shift+L";
-    public string UndoHotkey { get; set; } = "Ctrl+Shift+Backspace";
-    public string PolishHotkey { get; set; } = "Ctrl+Shift+K";
+    public string LanguageHotkey { get; set; } = "";
+    public string UndoHotkey { get; set; } = "";
+    public string PolishHotkey { get; set; } = "";
+    /// <summary>Set once the pre-3.1 default hotkeys have been cleared from an older settings file.</summary>
+    public bool LegacyHotkeysCleared { get; set; }
+
+    public DateTime? LastUpdateCheck { get; set; }
 
     public double? BarLeft { get; set; }
     public double? BarTop { get; set; }
@@ -75,6 +81,7 @@ public static class SettingsStore
             {
                 var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(AppPaths.SettingsFile)) ?? new();
                 settings.GroqKey = Unprotect(settings.GroqKey);
+                ClearLegacyHotkeys(settings);
                 return settings;
             }
         }
@@ -90,6 +97,16 @@ public static class SettingsStore
         var node = JsonSerializer.SerializeToNode(settings)!.AsObject();
         node[nameof(AppSettings.GroqKey)] = Protect(settings.GroqKey);
         AppPaths.WriteAllTextAtomic(AppPaths.SettingsFile, node.ToJsonString(Json));
+    }
+
+    /// <summary>3.0 shipped extra default hotkeys that clash with Excel and VS Code; drop them unless the user changed them.</summary>
+    static void ClearLegacyHotkeys(AppSettings s)
+    {
+        if (s.LegacyHotkeysCleared) return;
+        if (s.LanguageHotkey == "Ctrl+Shift+L") s.LanguageHotkey = "";
+        if (s.UndoHotkey == "Ctrl+Shift+Backspace") s.UndoHotkey = "";
+        if (s.PolishHotkey == "Ctrl+Shift+K") s.PolishHotkey = "";
+        s.LegacyHotkeysCleared = true;
     }
 
     static string Protect(string value)

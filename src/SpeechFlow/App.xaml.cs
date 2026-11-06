@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using SpeechFlow.Core;
 using SpeechFlow.UI;
 
@@ -48,8 +49,60 @@ public partial class App : Application
         _tray = new TrayIcon(_controller, OpenSettings, Quit);
         _controller.Initialize();
 
-        if (!_controller.Settings.Onboarded) new WelcomeWindow(_controller).Show();
-        else if (_controller.NeedsSetup) OpenSettings();
+        if (!_controller.Settings.Onboarded)
+        {
+            var welcome = new WelcomeWindow(_controller);
+            welcome.Finished += _tray.ShowReady;
+            welcome.Show();
+        }
+        else
+        {
+            if (_controller.NeedsSetup || e.Args.Contains("--settings")) OpenSettings();
+            else if (!e.Args.Contains(StartupRegistration.StartupArgument)) _tray.ShowReady();
+            _controller.PrefetchLocalModel();
+        }
+
+        // Check for updates a little after startup, at most once a day.
+        var updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        updateTimer.Tick += (_, _) =>
+        {
+            updateTimer.Stop();
+            var last = _controller.Settings.LastUpdateCheck;
+            if (last is null || DateTime.UtcNow - last.Value > TimeSpan.FromDays(1)) CheckForUpdates(manual: false);
+        };
+        updateTimer.Start();
+    }
+
+    /// <summary>Asks GitHub for a newer release; when found, offers it (directly if the user asked).</summary>
+    public async void CheckForUpdates(bool manual)
+    {
+        UpdateInfo? update;
+        try
+        {
+            update = await Updater.CheckAsync();
+            _controller!.MarkUpdateChecked();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Update check failed", ex);
+            if (manual) MessageBox.Show("Couldn't check for updates. Check your internet connection.", "SpeechFlow");
+            return;
+        }
+
+        if (update is null)
+        {
+            if (manual) MessageBox.Show($"You have the latest version ({Updater.Current}).", "SpeechFlow");
+            return;
+        }
+        if (manual) ShowUpdate(update);
+        else _tray!.ShowMessage($"SpeechFlow {update.Version} is available", "Click here to update.", () => ShowUpdate(update));
+    }
+
+    void ShowUpdate(UpdateInfo update)
+    {
+        var window = new UpdateWindow(update, Quit);
+        window.Show();
+        window.Activate();
     }
 
     void OpenSettings()
@@ -64,7 +117,7 @@ public partial class App : Application
             _settings.Activate();
             return;
         }
-        _settings = new SettingsWindow(_controller!);
+        _settings = new SettingsWindow(_controller!, () => CheckForUpdates(manual: true));
         _settings.Show();
         _settings.Activate();
     }

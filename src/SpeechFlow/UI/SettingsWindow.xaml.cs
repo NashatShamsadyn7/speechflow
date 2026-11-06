@@ -18,13 +18,16 @@ public partial class SettingsWindow : Window
     const string DefaultMicrophone = "Windows default";
 
     readonly DictationController _controller;
+    readonly Action _checkForUpdates;
     readonly ObservableCollection<Snippet> _snippets;
     CancellationTokenSource? _download;
 
-    public SettingsWindow(DictationController controller)
+    public SettingsWindow(DictationController controller, Action checkForUpdates)
     {
         InitializeComponent();
         _controller = controller;
+        _checkForUpdates = checkForUpdates;
+        VersionText.Text = $"Version {Updater.Current}";
         var s = controller.Settings;
 
         foreach (var model in ModelStore.Models)
@@ -172,6 +175,12 @@ public partial class SettingsWindow : Window
             ErrorText.Text = "The start / stop shortcut can't be empty.";
             return;
         }
+        var used = hotkeys.Select(b => b.Text.Trim()).Where(t => t.Length > 0).ToList();
+        if (used.Distinct(StringComparer.OrdinalIgnoreCase).Count() != used.Count)
+        {
+            ErrorText.Text = "Two actions use the same shortcut.";
+            return;
+        }
 
         var s = _controller.Settings.Clone();
         s.GroqKey = GroqKeyBox.Password.Trim();
@@ -212,6 +221,8 @@ public partial class SettingsWindow : Window
     }
 
     void OnCancel(object sender, RoutedEventArgs e) => Close();
+
+    void OnCheckUpdates(object sender, RoutedEventArgs e) => _checkForUpdates();
 
     protected override void OnClosing(CancelEventArgs e)
     {

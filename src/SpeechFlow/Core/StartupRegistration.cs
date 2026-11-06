@@ -7,6 +7,8 @@ public static class StartupRegistration
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ValueName = "SpeechFlow";
+    /// <summary>Passed when Windows starts the app, so it starts quietly (no "ready" notification).</summary>
+    public const string StartupArgument = "--startup";
 
     public static void Apply(bool enabled)
     {
@@ -14,7 +16,7 @@ public static class StartupRegistration
         {
             using var key = Registry.CurrentUser.CreateSubKey(RunKey);
             if (enabled && Environment.ProcessPath is { } exe)
-                key.SetValue(ValueName, $"\"{exe}\"");
+                key.SetValue(ValueName, $"\"{exe}\" {StartupArgument}");
             else
                 key.DeleteValue(ValueName, throwOnMissingValue: false);
         }

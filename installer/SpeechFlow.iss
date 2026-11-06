@@ -42,10 +42,18 @@ Name: "{autodesktop}\SpeechFlow"; Filename: "{app}\SpeechFlow.exe"; Tasks: deskt
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SpeechFlow"; \
-  ValueData: """{app}\SpeechFlow.exe"""; Flags: uninsdeletevalue; Tasks: startup
+  ValueData: """{app}\SpeechFlow.exe"" --startup"; Flags: uninsdeletevalue; Tasks: startup
 
 [Run]
 Filename: "{app}\SpeechFlow.exe"; Description: "{cm:LaunchProgram,SpeechFlow}"; Flags: nowait postinstall skipifsilent
+; The in-app updater runs this installer with /SILENT /RELAUNCH and expects the app to come back.
+Filename: "{app}\SpeechFlow.exe"; Flags: nowait; Check: IsRelaunch
+
+[Code]
+function IsRelaunch: Boolean;
+begin
+  Result := Pos('/RELAUNCH', UpperCase(GetCmdTail)) > 0;
+end;
 
 [UninstallRun]
 Filename: "taskkill.exe"; Parameters: "/im SpeechFlow.exe /f"; Flags: runhidden; RunOnceId: "StopSpeechFlow"

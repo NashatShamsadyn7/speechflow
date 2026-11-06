@@ -20,6 +20,17 @@ public sealed class GroqRecognizer(string apiKey) : ISpeechRecognizer
 
     public Task PrepareAsync(IProgress<string> progress, CancellationToken ct) => Task.CompletedTask;
 
+    /// <returns>True if Groq accepts the key, false if it rejects it. Throws on network errors.</returns>
+    public static async Task<bool> CheckKeyAsync(string key, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.groq.com/openai/v1/models");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        using var response = await Http.SendAsync(request, ct);
+        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) return false;
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
     public async Task<string> TranscribeAsync(byte[] pcm16, string? language, bool translate, CancellationToken ct)
     {
         for (int attempt = 1; ; attempt++)
