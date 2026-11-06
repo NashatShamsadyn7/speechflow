@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF and WinForms both define Application, MessageBox, etc.; usings are explicit instead. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SpeechFlow</AssemblyName>
+    <RootNamespace>SpeechFlow</RootNamespace>
+    <Version>3.0.0</Version>
+    <Product>SpeechFlow</Product>
+    <Company>Nashat Shamsadyn</Company>
+    <Copyright>Copyright (c) 2026 Nashat Shamsadyn</Copyright>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\icon.ico" />
+  </ItemGroup>
+
+</Project>

@@ -1,54 +1,77 @@
-# 🎙️ Windows Win+H Customizable Live STT & Typing Interpreter (Arabic & English)
+# SpeechFlow
 
-A state-of-the-art, **Microsoft Win+H inspired customizable voice typing bar** for Windows 10/11 with **3 customizable action buttons**, ultra-low latency (<250ms), and **22 advanced features**.
+Real-time voice typing for Windows 10/11, in Arabic and English. Press a shortcut, speak, and the
+text appears wherever your cursor is: Word, Chrome, WhatsApp, VS Code, any app.
 
----
+## Features
 
-## ✨ 22 Game-Changing Features (Verified 22/22)
+- **Live dictation** over Deepgram's streaming API (nova-3), with a live preview on the bar.
+- **Arabic dialects**: standard, Iraqi, Gulf, Egyptian, Levantine and Maghrebi.
+- **Voice punctuation**: in Arabic say فاصلة، سطر جديد، علامة استفهام، فاصلة منقوطة، نقطة (at the end of a phrase);
+  in English say "comma", "period", "question mark", "new line".
+- **Undo last phrase** and **AI polish** (fix grammar, make it professional, or translate AR ⇄ EN) through Groq.
+- **Snippets**: say "my email" and it types your address.
+- A floating bar that never steals focus, plus a tray icon and global shortcuts.
+- Nothing is lost while connecting: audio is buffered, the last words are flushed on stop, and it reconnects on its own.
+- Private by default: API keys are encrypted for your Windows account, and history is off unless you turn it on.
+- No admin rights and no keyboard hook.
 
-| # | Feature | Details |
-|---|---|---|
-| 1 | **Win+H Acrylic Floating Bar** | Sleek Windows 11 rounded pill with Mica/Acrylic glassmorphism, draggable, and always on top. |
-| 2 | **3-Button Customizable Action Bar** | Reassign the 3 action buttons in settings (Mic Toggle, Push-to-Talk, Lang Switch, AI Magic, Drawer). |
-| 3 | **AI Text Polisher & Rewriter** | 1-Click AI cleanup ("Fix Grammar", "Professional Business Tone", "Bullet Points", "Translate AR<->EN"). |
-| 4 | **Push-to-Talk vs Toggle Mode** | Hold key to talk or tap to toggle dictation. |
-| 5 | **Voice Punctuation & Formatting Commands** | Speak "فاصلة", "نقطة", "علامة استفهام", "سطر جديد" or "comma", "period", "new line" to format text live! |
-| 6 | **60FPS Real-Time Reactive EQ Visualizer** | Multi-bar smooth wave animation reactive to live microphone gain. |
-| 7 | **Interim Live Ticker / Ghost Typing** | Floating preview box displaying real-time partial hypothesis before committing. |
-| 8 | **Native Win32 Unicode Keystroke Injection** | `KEYEVENTF_UNICODE` typing that never corrupts Arabic/English regardless of Windows keyboard layout. |
-| 9 | **Atomic Fast-Paste Burst Mode (`Ctrl+V`)** | Rapid clipboard burst with backup and instant restore in <20ms. |
-| 10 | **Bilingual Auto-Detection & Code-Switching** | Seamlessly speak Arabic and English in the same session without manual toggling. |
-| 11 | **Audio Chimes & Earcons Feedback** | Subtle pleasant audio tones for listening start, stop, error, and language switch. |
-| 12 | **Custom Vocabulary & Voice Snippet Expansion** | Custom dictionary replacement (e.g. "بريدي" -> "myemail@domain.com", "تحياتي" -> "مع أطيب التحيات"). |
-| 13 | **Arabic Tashkeel & Diacritics Management** | Strip Tashkeel, preserve Tashkeel, or normalize Hamzas. |
-| 14 | **Profanity & Sensitive Word Filter** | Optional automatic masking of sensitive words with custom wordlist. |
-| 15 | **Dictation History Log & 1-Click Copy** | Persistent history viewer with search, timestamp, and instant re-paste. |
-| 16 | **Dynamic Microphone & Audio Device Switcher** | Hot-swap input microphones without restarting the application. |
-| 17 | **Customizable Global Hotkeys Rebinding** | User-defined hotkeys for Dictate, Language Switch, PTT, and AI Polish. |
-| 18 | **Auto-Sleep / Silence Inactivity Timer** | Automatically powers down audio stream after N seconds of silence to conserve API/battery. |
-| 19 | **Multi-Engine Switching** | Deepgram Nova-2 WebSocket, Groq Whisper-Turbo, and Local Offline Whisper. |
-| 20 | **Local Offline Fallback Mode (Faster-Whisper)** | Automatic fallback to local faster-whisper when internet is unavailable. |
-| 21 | **Smart Auto-Capitalization & Spacing Engine** | Context-aware space insertion and capitalization rules for English and Arabic. |
-| 22 | **HUD Screen Snapping & Caret Pinning** | Snap to bottom-center, top-center, or custom saved screen coordinates. |
+## Default shortcuts
 
----
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Shift+Space` | Start / stop dictation |
+| `Ctrl+Shift+L` | Switch Arabic / English |
+| `Ctrl+Shift+Backspace` | Undo the last phrase (press again to go further back) |
+| `Ctrl+Shift+K` | AI-polish the last dictation |
 
-## 🚀 Quick Start
+You can change all of them in Settings → Shortcuts.
 
-### 1. Run the Application
+## Getting an API key
+
+SpeechFlow uses [Deepgram](https://console.deepgram.com/signup) for speech recognition. New accounts
+get $200 of free credit. Create a key and paste it into Settings. AI polish is optional and needs a free
+[Groq](https://console.groq.com/keys) key.
+
+## Where things are stored
+
+`%APPDATA%\SpeechFlow\` holds `settings.json` (with the keys encrypted), `snippets.json`, the optional
+`history.jsonl`, and `speechflow.log`. The log never contains what you dictated.
+
+## Building
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
 ```powershell
-python main.py
+dotnet test SpeechFlow.slnx
+dotnet run --project src/SpeechFlow
+
+# Release build: one self-contained exe, then the installer (needs Inno Setup 6)
+dotnet publish src/SpeechFlow -c Release -r win-x64 --self-contained -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
+iscc installer\SpeechFlow.iss
 ```
 
-### 2. Run the 22-Feature Automated Verification
-```powershell
-python verify_all_features.py
+Pushing a tag like `v3.0.0` makes GitHub Actions run the tests, build the installer and a portable exe,
+and attach both to a GitHub release.
+
+## Project layout
+
+```
+src/SpeechFlow/
+  Core/                    speech, audio, typing, text formatting, hotkeys, settings
+  UI/                      floating bar, settings window, tray icon
+  DictationController.cs   ties it all together; everything runs on the UI thread
+tests/SpeechFlow.Tests/    unit tests for text formatting and shortcut parsing
+installer/SpeechFlow.iss   per-user Inno Setup installer (no admin)
+public/                    landing page (Firebase Hosting)
 ```
 
----
+## Known limits
 
-## ⌨️ Default Shortcuts
+- Windows blocks typing into apps running as administrator unless SpeechFlow also runs as administrator.
+- If you click into a different spot inside the same window, the space between phrases may be off by one.
 
-* **`Ctrl + Shift + Space`**: Start / Stop Dictation.
-* **`Ctrl + Shift + L`**: Toggle Language (Arabic `العربية` / English `EN`).
-* **`Click ⚡ Tools`**: Expand drawer with History, AI Magic, Snippets, and Settings.
+## License
+
+Copyright (c) 2026 Nashat Shamsadyn. See [LICENSE](LICENSE).

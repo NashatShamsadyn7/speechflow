@@ -1,0 +1,155 @@
+<Window x:Class="SpeechFlow.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SpeechFlow Settings" Width="560" Height="640" MinWidth="480" MinHeight="520"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
+        Icon="/Assets/icon.ico">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Label">
+            <Setter Property="Margin" Value="0,12,0,4" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Hint">
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+        <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <TextBlock x:Name="ErrorText" Foreground="#DC2626" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,180,0" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="80" Margin="0,0,8,0" IsCancel="True" Click="OnCancel" />
+                <Button Content="Save" Width="80" IsDefault="True" Click="OnSave" />
+            </StackPanel>
+        </Grid>
+
+        <TabControl>
+            <TabItem Header="General">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Style="{StaticResource Label}" Text="Deepgram API key (required)" Margin="0,0,0,4" />
+                        <PasswordBox x:Name="DeepgramKeyBox" />
+                        <TextBlock Style="{StaticResource Hint}">
+                            Free key with $200 credit:
+                            <Hyperlink NavigateUri="https://console.deepgram.com/signup" RequestNavigate="OnLink">console.deepgram.com</Hyperlink>
+                            → API Keys → Create. Stored encrypted for your Windows account.
+                        </TextBlock>
+
+                        <TextBlock Style="{StaticResource Label}" Text="Language" />
+                        <ComboBox x:Name="LanguageBox">
+                            <ComboBoxItem Tag="ar" Content="العربية — Arabic" />
+                            <ComboBoxItem Tag="en" Content="English" />
+                        </ComboBox>
+
+                        <TextBlock Style="{StaticResource Label}" Text="Arabic dialect" />
+                        <ComboBox x:Name="DialectBox">
+                            <ComboBoxItem Tag="ar" Content="Standard / auto" />
+                            <ComboBoxItem Tag="ar-IQ" Content="Iraqi" />
+                            <ComboBoxItem Tag="ar-SA" Content="Saudi" />
+                            <ComboBoxItem Tag="ar-AE" Content="Emirati" />
+                            <ComboBoxItem Tag="ar-KW" Content="Kuwaiti" />
+                            <ComboBoxItem Tag="ar-QA" Content="Qatari" />
+                            <ComboBoxItem Tag="ar-EG" Content="Egyptian" />
+                            <ComboBoxItem Tag="ar-SY" Content="Syrian" />
+                            <ComboBoxItem Tag="ar-LB" Content="Lebanese" />
+                            <ComboBoxItem Tag="ar-JO" Content="Jordanian" />
+                            <ComboBoxItem Tag="ar-PS" Content="Palestinian" />
+                            <ComboBoxItem Tag="ar-MA" Content="Moroccan" />
+                            <ComboBoxItem Tag="ar-DZ" Content="Algerian" />
+                            <ComboBoxItem Tag="ar-TN" Content="Tunisian" />
+                            <ComboBoxItem Tag="ar-SD" Content="Sudanese" />
+                        </ComboBox>
+
+                        <TextBlock Style="{StaticResource Label}" Text="Microphone" />
+                        <ComboBox x:Name="MicrophoneBox" />
+
+                        <TextBlock Style="{StaticResource Label}" Text="How to insert text" />
+                        <ComboBox x:Name="TypingModeBox">
+                            <ComboBoxItem Tag="type" Content="Type it (recommended)" />
+                            <ComboBoxItem Tag="paste" Content="Paste through the clipboard (for apps that drop typed characters)" />
+                        </ComboBox>
+
+                        <TextBlock Style="{StaticResource Label}" Text="Stop automatically after silence (seconds, 0 = never)" />
+                        <TextBox x:Name="AutoStopBox" Width="80" HorizontalAlignment="Left" />
+
+                        <CheckBox x:Name="VoiceCommandsBox" Content="Arabic voice punctuation (فاصلة، سطر جديد، علامة استفهام…)" />
+                        <CheckBox x:Name="TashkeelBox" Content="Remove Arabic diacritics (tashkeel)" />
+                        <CheckBox x:Name="SoundsBox" Content="Play sounds on start / stop" />
+                        <CheckBox x:Name="HistoryBox" Content="Keep a local history of what I dictate" />
+                        <CheckBox x:Name="StartupBox" Content="Start SpeechFlow when Windows starts" />
+                        <TextBlock Style="{StaticResource Hint}" Text="English punctuation is spoken naturally: say “comma”, “period”, “question mark”, “new line”." />
+
+                        <Expander Header="Advanced" Margin="0,16,0,0">
+                            <StackPanel Margin="0,4,0,0">
+                                <TextBlock Style="{StaticResource Label}" Text="Deepgram model" />
+                                <TextBox x:Name="ModelBox" />
+                                <TextBlock Style="{StaticResource Hint}" Text="nova-3 supports Arabic and English. Change only if you know what you're doing." />
+                                <Button Content="Clear dictation history" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,3" Click="OnClearHistory" />
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="AI polish">
+                <StackPanel Margin="12">
+                    <TextBlock Style="{StaticResource Label}" Text="Groq API key (optional)" Margin="0,0,0,4" />
+                    <PasswordBox x:Name="GroqKeyBox" />
+                    <TextBlock Style="{StaticResource Hint}">
+                        Free key:
+                        <Hyperlink NavigateUri="https://console.groq.com/keys" RequestNavigate="OnLink">console.groq.com/keys</Hyperlink>
+                    </TextBlock>
+
+                    <TextBlock Style="{StaticResource Label}" Text="When I press the polish shortcut" />
+                    <ComboBox x:Name="PolishModeBox">
+                        <ComboBoxItem Tag="grammar" Content="Fix grammar and spelling" />
+                        <ComboBoxItem Tag="professional" Content="Make it professional" />
+                        <ComboBoxItem Tag="translate" Content="Translate Arabic ⇄ English" />
+                    </ComboBox>
+                    <TextBlock Style="{StaticResource Hint}" Text="Polish replaces the text you just dictated with the AI version, right where you typed it." />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Shortcuts">
+                <StackPanel Margin="12">
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4"
+                               Text="Write shortcuts like Ctrl+Shift+Space or Ctrl+Alt+D. Each needs at least one of Ctrl, Shift, Alt or Win." />
+                    <TextBlock Style="{StaticResource Label}" Text="Start / stop dictation" />
+                    <TextBox x:Name="ToggleHotkeyBox" />
+                    <TextBlock Style="{StaticResource Label}" Text="Switch Arabic / English" />
+                    <TextBox x:Name="LanguageHotkeyBox" />
+                    <TextBlock Style="{StaticResource Label}" Text="Undo last phrase" />
+                    <TextBox x:Name="UndoHotkeyBox" />
+                    <TextBlock Style="{StaticResource Label}" Text="AI polish last dictation" />
+                    <TextBox x:Name="PolishHotkeyBox" />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Snippets">
+                <DockPanel Margin="12">
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}" Margin="0,0,0,8"
+                               Text="Say the phrase on the left and SpeechFlow types the text on the right. Example: “my email” → you@example.com" />
+                    <DataGrid x:Name="SnippetGrid" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="When I say" Binding="{Binding Trigger}" Width="*" />
+                            <DataGridTextColumn Header="Type this" Binding="{Binding Text}" Width="2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
