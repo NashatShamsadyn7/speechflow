@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -43,16 +44,21 @@ public partial class App : Application
 
         _controller = new DictationController(Dispatcher);
         _controller.SettingsRequested += OpenSettings;
-        _bar = new BarWindow(_controller);
-        _tray = new TrayIcon(_controller, _bar, OpenSettings, Quit);
-        _bar.Show();
+        _bar = new BarWindow(_controller); // hidden until dictation starts
+        _tray = new TrayIcon(_controller, OpenSettings, Quit);
         _controller.Initialize();
 
-        if (_controller.NeedsSetup) OpenSettings();
+        if (!_controller.Settings.Onboarded) new WelcomeWindow(_controller).Show();
+        else if (_controller.NeedsSetup) OpenSettings();
     }
 
     void OpenSettings()
     {
+        if (Windows.OfType<WelcomeWindow>().FirstOrDefault() is { } welcome)
+        {
+            welcome.Activate();
+            return;
+        }
         if (_settings is { IsLoaded: true })
         {
             _settings.Activate();

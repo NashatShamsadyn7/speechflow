@@ -22,6 +22,7 @@ public sealed class SpeechSession
     readonly ISpeechRecognizer _recognizer;
     readonly ISpeechRecognizer? _previewRecognizer;
     readonly string? _language;
+    readonly bool _translate;
     readonly Channel<(byte[] Pcm, float Rms)> _audio =
         Channel.CreateUnbounded<(byte[], float)>(new UnboundedChannelOptions { SingleReader = true });
     readonly Channel<byte[]> _utterances =
@@ -46,11 +47,14 @@ public sealed class SpeechSession
 
     /// <param name="language">"ar", "en", or null for automatic detection.</param>
     /// <param name="previewRecognizer">Fast local recognizer for live preview, or null for none.</param>
-    public SpeechSession(ISpeechRecognizer recognizer, string? language, ISpeechRecognizer? previewRecognizer = null)
+    /// <param name="translate">Type English whatever language is spoken.</param>
+    public SpeechSession(ISpeechRecognizer recognizer, string? language,
+        ISpeechRecognizer? previewRecognizer = null, bool translate = false)
     {
         _recognizer = recognizer;
         _language = language;
         _previewRecognizer = previewRecognizer;
+        _translate = translate;
     }
 
     public void Start() => _ = Task.Run(RunAsync);
@@ -147,7 +151,7 @@ public sealed class SpeechSession
         {
             try
             {
-                var text = await _previewRecognizer!.TranscribeAsync(audio, _language, ct);
+                var text = await _previewRecognizer!.TranscribeAsync(audio, _language, _translate, ct);
                 if (phrase == Volatile.Read(ref _phrase) && !string.IsNullOrWhiteSpace(text)) Interim?.Invoke(text);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -168,7 +172,7 @@ public sealed class SpeechSession
             Transcribing?.Invoke(true);
             try
             {
-                var text = await _recognizer.TranscribeAsync(utterance, _language, ct);
+                var text = await _recognizer.TranscribeAsync(utterance, _language, _translate, ct);
                 if (!string.IsNullOrWhiteSpace(text)) Final?.Invoke(text);
             }
             finally

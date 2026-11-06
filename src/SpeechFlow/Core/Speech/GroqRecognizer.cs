@@ -13,18 +13,20 @@ namespace SpeechFlow.Core.Speech;
 /// <summary>Whisper large-v3-turbo on Groq's servers: faster than a laptop CPU, needs a free API key.</summary>
 public sealed class GroqRecognizer(string apiKey) : ISpeechRecognizer
 {
-    const string Endpoint = "https://api.groq.com/openai/v1/audio/transcriptions";
+    const string TranscribeEndpoint = "https://api.groq.com/openai/v1/audio/transcriptions";
+    // Groq only translates with the full large-v3 model, not turbo.
+    const string TranslateEndpoint = "https://api.groq.com/openai/v1/audio/translations";
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     public Task PrepareAsync(IProgress<string> progress, CancellationToken ct) => Task.CompletedTask;
 
-    public async Task<string> TranscribeAsync(byte[] pcm16, string? language, CancellationToken ct)
+    public async Task<string> TranscribeAsync(byte[] pcm16, string? language, bool translate, CancellationToken ct)
     {
         for (int attempt = 1; ; attempt++)
         {
             try
             {
-                return await SendAsync(pcm16, language, ct);
+                return await SendAsync(pcm16, language, translate, ct);
             }
             catch (HttpRequestException ex) when (attempt < 2)
             {
@@ -42,18 +44,19 @@ public sealed class GroqRecognizer(string apiKey) : ISpeechRecognizer
         }
     }
 
-    async Task<string> SendAsync(byte[] pcm16, string? language, CancellationToken ct)
+    async Task<string> SendAsync(byte[] pcm16, string? language, bool translate, CancellationToken ct)
     {
         using var form = new MultipartFormDataContent();
         var audio = new ByteArrayContent(Wav.FromPcm16(pcm16));
         audio.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         form.Add(audio, "file", "speech.wav");
-        form.Add(new StringContent("whisper-large-v3-turbo"), "model");
+        form.Add(new StringContent(translate ? "whisper-large-v3" : "whisper-large-v3-turbo"), "model");
         form.Add(new StringContent("json"), "response_format");
         form.Add(new StringContent("0"), "temperature");
-        if (language is not null) form.Add(new StringContent(language), "language");
+        if (!translate && language is not null) form.Add(new StringContent(language), "language");
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = form };
+        var endpoint = translate ? TranslateEndpoint : TranscribeEndpoint;
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = form };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         using var response = await Http.SendAsync(request, ct);
         var body = await response.Content.ReadAsStringAsync(ct);

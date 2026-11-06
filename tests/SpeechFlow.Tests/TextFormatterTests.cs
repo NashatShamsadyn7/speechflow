@@ -113,6 +113,28 @@ public class TextFormatterTests
     }
 
     [Fact]
+    public void Arabic_digits_when_enabled()
+    {
+        var f = new TextFormatter { ArabicDigits = true };
+        Assert.Equal("السعر ٣٥ دينار والموعد ٣:٣٠", f.Format("السعر 35 دينار والموعد 3:30", "ar", null));
+        Assert.Equal("المبلغ ١,٠٠٠ و ٢.٥ كيلو.", f.Format("المبلغ 1,000 و 2.5 كيلو.", "ar", null));
+    }
+
+    [Fact]
+    public void Arabic_digits_leave_emails_links_and_codes_alone()
+    {
+        var f = new TextFormatter { ArabicDigits = true };
+        Assert.Equal("راسلني على ali99@mail.com أو site2.com والإصدار v2", f.Format("راسلني على ali99@mail.com أو site2.com والإصدار v2", "ar", null));
+    }
+
+    [Fact]
+    public void English_digits_stay_western()
+    {
+        var f = new TextFormatter { ArabicDigits = true };
+        Assert.Equal("It costs 35 dollars.", f.Format("It costs 35 dollars.", "en", null));
+    }
+
+    [Fact]
     public void Empty_segment_types_nothing() =>
         Assert.Equal("", _f.Format("   ", "en", 'a'));
 }

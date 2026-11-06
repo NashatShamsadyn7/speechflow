@@ -16,7 +16,7 @@ public sealed class TrayIcon : IDisposable
     readonly ToolStripMenuItem _toggleItem;
     readonly ToolStripMenuItem _languageItem;
 
-    public TrayIcon(DictationController controller, BarWindow bar, Action openSettings, Action quit)
+    public TrayIcon(DictationController controller, Action openSettings, Action quit)
     {
         _controller = controller;
 
@@ -26,7 +26,6 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(_toggleItem);
         menu.Items.Add(_languageItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Show bar", null, (_, _) => bar.Show());
         menu.Items.Add("Settings", null, (_, _) => openSettings());
         menu.Items.Add("Open data folder", null, (_, _) => OpenDataFolder());
         menu.Items.Add(new ToolStripSeparator());
@@ -35,7 +34,7 @@ public sealed class TrayIcon : IDisposable
         _icon = new NotifyIcon { Icon = _idleIcon, Visible = true, ContextMenuStrip = menu };
         _icon.MouseClick += (_, e) =>
         {
-            if (e.Button == MouseButtons.Left) bar.Show();
+            if (e.Button == MouseButtons.Left) openSettings();
         };
 
         controller.StateChanged += Update;
@@ -47,11 +46,9 @@ public sealed class TrayIcon : IDisposable
     {
         bool listening = _controller.IsListening;
         _icon.Icon = listening ? _listeningIcon : _idleIcon;
-        _icon.Text = listening ? "SpeechFlow — listening" : "SpeechFlow";
+        _icon.Text = listening ? "SpeechFlow — listening" : $"SpeechFlow — {_controller.Settings.ToggleHotkey} to dictate";
         _toggleItem.Text = listening ? "Stop dictation" : "Start dictation";
-        _languageItem.Text = _controller.Settings.Language == "ar"
-            ? "Language: Arabic (switch to English)"
-            : "Language: English (switch to Arabic)";
+        _languageItem.Text = $"Mode: {_controller.ModeLabel} (click to switch)";
     }
 
     static void OpenDataFolder()

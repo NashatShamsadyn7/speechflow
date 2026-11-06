@@ -90,6 +90,8 @@
                         <TextBlock Style="{StaticResource Label}" Text="Stop automatically after silence (seconds, 0 = never)" />
                         <TextBox x:Name="AutoStopBox" Width="80" HorizontalAlignment="Left" />
 
+                        <CheckBox x:Name="TranslateBox" Content="Translate to English (speak Arabic, get English)" />
+                        <CheckBox x:Name="ArabicDigitsBox" Content="Arabic numbers (٣٥ instead of 35)" />
                         <CheckBox x:Name="VoiceCommandsBox" Content="Spoken punctuation (فاصلة، سطر جديد… / comma, new line…)" />
                         <CheckBox x:Name="TashkeelBox" Content="Remove Arabic diacritics (tashkeel)" />
                         <CheckBox x:Name="SoundsBox" Content="Play sounds on start / stop" />

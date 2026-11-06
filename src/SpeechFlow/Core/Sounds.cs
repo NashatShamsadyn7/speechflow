@@ -10,10 +10,11 @@ public sealed class Sounds
 {
     const int Rate = 22050;
 
-    readonly SoundPlayer _start = Build((660, 70), (880, 90));
-    readonly SoundPlayer _stop = Build((880, 70), (587, 90));
-    readonly SoundPlayer _switch = Build((990, 60));
-    readonly SoundPlayer _error = Build((330, 140), (262, 160));
+    // Soft rising/falling fifths, quiet enough to be noticed without being annoying.
+    readonly SoundPlayer _start = Build((587, 90), (880, 120));
+    readonly SoundPlayer _stop = Build((880, 90), (587, 120));
+    readonly SoundPlayer _switch = Build((784, 70));
+    readonly SoundPlayer _error = Build((330, 140), (262, 180));
 
     public bool Enabled { get; set; } = true;
 
@@ -36,11 +37,11 @@ public sealed class Sounds
         foreach (var (hz, ms) in notes)
         {
             int count = Rate * ms / 1000;
-            int fade = Rate * 8 / 1000;
+            int fade = Rate * 25 / 1000;
             for (int i = 0; i < count; i++)
             {
                 double envelope = Math.Min(1.0, Math.Min(i, count - i) / (double)fade);
-                double sample = Math.Sin(2 * Math.PI * hz * i / Rate) * envelope * 0.22;
+                double sample = Math.Sin(2 * Math.PI * hz * i / Rate) * envelope * 0.12;
                 writer.Write((short)(sample * short.MaxValue));
             }
         }

@@ -51,6 +51,8 @@ public sealed class TextFormatter
     static readonly Regex SpaceAroundNewline = new(@"[ \t]*\n[ \t]*");
     // Whisper often punctuates the spoken command too: "comma," → ",," / "سطر جديد." → "\n."
     static readonly Regex DuplicateAfterMark = new(@"(?<=[،؛؟!:,?\n])[ \t]*[.,،]");
+    // A number standing on its own (35, 3.5, 1,000, 3:30), not part of an email, URL or code like "v2".
+    static readonly Regex StandaloneNumber = new(@"(?<![A-Za-z0-9@_\-/.])[0-9]+(?:[.,:][0-9]+)*(?![A-Za-z0-9@_\-])");
     static readonly Regex ArabicLetters = new(@"[؀-ۿ]");
     static readonly Regex LatinLetters = new(@"[A-Za-z]");
     static readonly Regex MissingSpaceAfterArabicMark = new(@"(?<=[،؛؟])(?=[^\s\d)\]])");
@@ -62,6 +64,8 @@ public sealed class TextFormatter
 
     public bool VoiceCommands { get; set; } = true;
     public bool StripTashkeel { get; set; }
+    /// <summary>In Arabic text, write 35 as ٣٥.</summary>
+    public bool ArabicDigits { get; set; }
 
     public void SetSnippets(IEnumerable<Snippet> snippets)
     {
@@ -86,6 +90,7 @@ public sealed class TextFormatter
             if (StripTashkeel) text = Tashkeel.Replace(text, "");
             text = ToArabicPunctuation(text);
             if (VoiceCommands) text = ApplyArabicCommands(text);
+            if (ArabicDigits) text = StandaloneNumber.Replace(text, m => ToArabicIndic(m.Value));
         }
         else if (VoiceCommands)
         {
@@ -105,6 +110,14 @@ public sealed class TextFormatter
     /// <summary>"ar" if the text is mostly Arabic script, otherwise "en". Used in auto-language mode.</summary>
     public static string DetectLanguage(string text) =>
         ArabicLetters.Count(text) >= LatinLetters.Count(text) && ArabicLetters.IsMatch(text) ? "ar" : "en";
+
+    static string ToArabicIndic(string number)
+    {
+        var chars = number.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (chars[i] is >= '0' and <= '9') chars[i] = (char)('٠' + (chars[i] - '0'));
+        return new string(chars);
+    }
 
     static string ApplyArabicCommands(string text)
     {

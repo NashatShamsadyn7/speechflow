@@ -20,6 +20,12 @@ public sealed class AppSettings
 
     /// <summary>"ar", "en" or "auto".</summary>
     public string Language { get; set; } = "ar";
+    /// <summary>Translate what's said into English instead of typing it as spoken.</summary>
+    public bool Translate { get; set; }
+    /// <summary>Type Arabic text with Arabic-Indic digits (٣٥ rather than 35).</summary>
+    public bool ArabicDigits { get; set; } = true;
+    /// <summary>False until the welcome screen has been completed.</summary>
+    public bool Onboarded { get; set; }
 
     /// <summary>"type" (SendInput) or "paste" (clipboard + Ctrl+V).</summary>
     public string TypingMode { get; set; } = "type";

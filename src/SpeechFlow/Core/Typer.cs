@@ -124,10 +124,14 @@ public sealed class Typer : IDisposable
         }
     }
 
+    /// <summary>
+    /// In push-to-talk the user holds Ctrl+Shift while speaking, so text waits until they let go;
+    /// the cap only guards against a stuck key.
+    /// </summary>
     static void WaitForModifierRelease()
     {
         var watch = Stopwatch.StartNew();
-        while (watch.ElapsedMilliseconds < 1500 && AnyModifierDown()) Thread.Sleep(15);
+        while (watch.ElapsedMilliseconds < 30_000 && AnyModifierDown()) Thread.Sleep(15);
     }
 
     static bool AnyModifierDown() =>

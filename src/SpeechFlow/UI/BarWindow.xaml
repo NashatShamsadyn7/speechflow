@@ -28,7 +28,7 @@
             <Button x:Name="MicButton" Grid.Column="0" Style="{StaticResource MicButton}" Click="OnMicClick" Content="&#xE720;" />
 
             <Button x:Name="LanguageButton" Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource LangPill}"
-                    Click="OnLanguageClick" Content="AR" ToolTip="Switch language" />
+                    Click="OnLanguageClick" Content="AR" ToolTip="Switch: Arabic → English → Arabic translated to English" />
 
             <StackPanel Grid.Column="2" Margin="12,0,8,0" VerticalAlignment="Center">
                 <TextBlock x:Name="PreviewText" Foreground="{StaticResource TextPrimary}" FontSize="14"
@@ -50,7 +50,6 @@
             </StackPanel>
 
             <Button Grid.Column="4" Style="{StaticResource BarButton}" Click="OnSettingsClick" Content="&#xE713;" ToolTip="Settings" />
-            <Button Grid.Column="5" Style="{StaticResource BarButton}" Click="OnHideClick" Content="&#xE921;" ToolTip="Hide (SpeechFlow keeps running in the tray)" />
         </Grid>
     </Border>
 </Window>

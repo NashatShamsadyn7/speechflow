@@ -11,7 +11,8 @@ public interface ISpeechRecognizer
     Task PrepareAsync(IProgress<string> progress, CancellationToken ct);
 
     /// <param name="language">"ar", "en", or null to let the model detect it.</param>
-    Task<string> TranscribeAsync(byte[] pcm16, string? language, CancellationToken ct);
+    /// <param name="translate">True to output English whatever the spoken language.</param>
+    Task<string> TranscribeAsync(byte[] pcm16, string? language, bool translate, CancellationToken ct);
 }
 
 /// <summary>A problem the user has to fix (bad key, no disk space…); stops the session.</summary>

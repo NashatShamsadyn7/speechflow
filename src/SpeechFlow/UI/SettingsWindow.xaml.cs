@@ -43,6 +43,8 @@ public partial class SettingsWindow : Window
         MicrophoneBox.SelectedItem = MicrophoneBox.Items.Contains(s.Microphone) ? s.Microphone : DefaultMicrophone;
 
         AutoStopBox.Text = s.AutoStopSeconds.ToString();
+        TranslateBox.IsChecked = s.Translate;
+        ArabicDigitsBox.IsChecked = s.ArabicDigits;
         VoiceCommandsBox.IsChecked = s.VoiceCommands;
         TashkeelBox.IsChecked = s.StripTashkeel;
         SoundsBox.IsChecked = s.Sounds;
@@ -181,6 +183,8 @@ public partial class SettingsWindow : Window
         s.PolishMode = SelectedTag(PolishModeBox, "grammar");
         s.Microphone = MicrophoneBox.SelectedItem as string is { } mic && mic != DefaultMicrophone ? mic : "";
         s.AutoStopSeconds = autoStop;
+        s.Translate = TranslateBox.IsChecked == true;
+        s.ArabicDigits = ArabicDigitsBox.IsChecked == true;
         s.VoiceCommands = VoiceCommandsBox.IsChecked == true;
         s.StripTashkeel = TashkeelBox.IsChecked == true;
         s.Sounds = SoundsBox.IsChecked == true;

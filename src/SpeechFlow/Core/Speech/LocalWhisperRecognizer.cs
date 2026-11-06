@@ -13,10 +13,11 @@ namespace SpeechFlow.Core.Speech;
 /// </summary>
 public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
 {
-    // A short punctuated example nudges Whisper to punctuate its own output.
+    // A short punctuated example nudges Whisper to punctuate its own output. The Arabic one is
+    // deliberately dialect-neutral so speech is written the way it was said, not turned into فصحى.
     static readonly Dictionary<string, string> Prompts = new()
     {
-        ["ar"] = "مرحباً، كيف حالك؟ أنا بخير، شكراً.",
+        ["ar"] = "نعم، تمام. شكراً!",
         ["en"] = "Hello, how are you? I'm fine, thanks.",
     };
 
@@ -81,13 +82,13 @@ public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
         }
     }
 
-    public async Task<string> TranscribeAsync(byte[] pcm16, string? language, CancellationToken ct)
+    public async Task<string> TranscribeAsync(byte[] pcm16, string? language, bool translate, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
         {
             if (_factory is null) throw new InvalidOperationException("PrepareAsync must run first.");
-            var processor = GetProcessor(language, AudioContextFor(pcm16.Length));
+            var processor = GetProcessor(language, translate, AudioContextFor(pcm16.Length));
 
             var samples = new float[pcm16.Length / 2];
             for (int i = 0; i < samples.Length; i++)
@@ -118,9 +119,9 @@ public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
         return Math.Min(FullContext, (frames + Bucket - 1) / Bucket * Bucket);
     }
 
-    WhisperProcessor GetProcessor(string? language, int audioContext)
+    WhisperProcessor GetProcessor(string? language, bool translate, int audioContext)
     {
-        var key = $"{language ?? "auto"}:{audioContext}";
+        var key = $"{language ?? "auto"}:{translate}:{audioContext}";
         if (_processors.TryGetValue(key, out var existing)) return existing;
 
         // ~12 tokens per second covers fast Arabic speech; the cap stops runaway repetition loops,
@@ -134,7 +135,9 @@ public sealed class LocalWhisperRecognizer : ISpeechRecognizer, IDisposable
             .WithSingleSegment()   // phrases are short; one segment decodes faster
             .WithMaxTokensPerSegment(maxTokens)
             .WithTemperatureInc(0); // no fallback re-decoding: one pass, predictable latency
-        if (language is not null && Prompts.TryGetValue(language, out var prompt))
+        if (translate)
+            builder = builder.WithTranslate().WithPrompt(Prompts["en"]);
+        else if (language is not null && Prompts.TryGetValue(language, out var prompt))
             builder = builder.WithPrompt(prompt);
 
         var processor = builder.Build();

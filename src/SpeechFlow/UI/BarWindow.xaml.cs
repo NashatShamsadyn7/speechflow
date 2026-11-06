@@ -11,16 +11,20 @@ using SpeechFlow.Core;
 namespace SpeechFlow.UI;
 
 /// <summary>
-/// The floating dictation bar. It never takes focus (WS_EX_NOACTIVATE), so clicking the mic
-/// leaves the cursor in the app you are typing into.
+/// The floating dictation bar, shown only while dictating (like Win+H). It never takes focus
+/// (WS_EX_NOACTIVATE), so clicking it leaves the cursor in the app you are typing into.
 /// </summary>
 public partial class BarWindow : Window
 {
     const int PreviewChars = 70;
+    // How long the bar stays after dictation stops, so the last phrase can still appear.
+    static readonly TimeSpan Linger = TimeSpan.FromSeconds(2);
+    static readonly TimeSpan ErrorLinger = TimeSpan.FromSeconds(6);
 
     readonly DictationController _controller;
     readonly Rectangle[] _bars;
     readonly DispatcherTimer _meterTimer;
+    readonly DispatcherTimer _hideTimer;
     double _shownLevel;
     double _phase;
 
@@ -30,6 +34,12 @@ public partial class BarWindow : Window
         _controller = controller;
         _bars = Meter.Children.OfType<Rectangle>().ToArray();
         _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(33), DispatcherPriority.Render, (_, _) => AnimateMeter(), Dispatcher);
+        _hideTimer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher);
+        _hideTimer.Tick += (_, _) =>
+        {
+            _hideTimer.Stop();
+            if (!_controller.IsListening) Hide();
+        };
 
         controller.StateChanged += UpdateState;
         controller.StatusChanged += ShowStatus;
@@ -37,6 +47,16 @@ public partial class BarWindow : Window
 
         UpdateState();
         PlaceOnScreen();
+    }
+
+    /// <summary>Shows the bar, then hides it after <paramref name="after"/> unless dictation is running.</summary>
+    void ShowFor(TimeSpan after)
+    {
+        if (!IsVisible) Show();
+        _hideTimer.Stop();
+        if (_controller.IsListening) return;
+        _hideTimer.Interval = after;
+        _hideTimer.Start();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -74,21 +94,25 @@ public partial class BarWindow : Window
     void UpdateState()
     {
         bool listening = _controller.IsListening;
-        bool arabic = _controller.Settings.Language == "ar";
 
         MicButton.Content = listening ? "" : "";
         MicButton.Background = (Brush)FindResource(listening ? "Recording" : "Accent");
         MicButton.Foreground = listening ? Brushes.White : (Brush)new BrushConverter().ConvertFrom("#0B1220")!;
         MicButton.ToolTip = $"{(listening ? "Stop" : "Start")} dictation ({_controller.Settings.ToggleHotkey})";
 
-        LanguageButton.Content = arabic ? "AR" : "EN";
+        LanguageButton.Content = _controller.ModeLabel;
 
-        if (listening) _meterTimer.Start();
+        if (listening)
+        {
+            _meterTimer.Start();
+            ShowFor(Linger);
+        }
         else
         {
             _meterTimer.Stop();
             _shownLevel = 0;
             foreach (var bar in _bars) bar.Height = 3;
+            if (IsVisible) ShowFor(Linger);
         }
     }
 
@@ -102,7 +126,7 @@ public partial class BarWindow : Window
             StatusKind.Error => (Brush)FindResource("Recording"),
             _ => (Brush)FindResource("TextMuted"),
         };
-        if (kind == StatusKind.Error && !IsVisible) Show();
+        if (kind == StatusKind.Error) ShowFor(ErrorLinger);
     }
 
     void ShowPreview(string text)
@@ -114,9 +138,12 @@ public partial class BarWindow : Window
             PreviewText.Foreground = (Brush)FindResource("TextMuted");
             return;
         }
-        PreviewText.FlowDirection = _controller.Settings.Language == "ar" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        bool rtl = TextFormatter.DetectLanguage(text) == "ar";
+        PreviewText.FlowDirection = rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         PreviewText.Foreground = (Brush)FindResource("TextPrimary");
         PreviewText.Text = text.Length > PreviewChars ? "…" + text[^PreviewChars..] : text;
+        // A phrase typed just after stopping keeps the bar up long enough to be seen.
+        if (IsVisible && !_controller.IsListening) ShowFor(Linger);
     }
 
     void AnimateMeter()
@@ -142,5 +169,4 @@ public partial class BarWindow : Window
     void OnMicClick(object sender, RoutedEventArgs e) => _controller.Toggle();
     void OnLanguageClick(object sender, RoutedEventArgs e) => _controller.SwitchLanguage();
     void OnSettingsClick(object sender, RoutedEventArgs e) => _controller.RequestSettings();
-    void OnHideClick(object sender, RoutedEventArgs e) => Hide();
 }

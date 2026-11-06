@@ -24,7 +24,13 @@ public sealed class DictationController : IDisposable
     readonly TextFormatter _formatter = new();
     readonly LocalWhisperRecognizer _local;
     readonly DispatcherTimer _autoStop;
+    readonly DispatcherTimer _holdWatch;
     HotkeyManager? _hotkeys;
+
+    // Tap the toggle shortcut to start/stop; hold it to talk and release to stop.
+    static readonly TimeSpan HoldThreshold = TimeSpan.FromMilliseconds(400);
+    uint _toggleKey;
+    DateTime _toggleDownAt;
 
     volatile SpeechSession? _session;
     bool _sessionReady;
@@ -45,6 +51,14 @@ public sealed class DictationController : IDisposable
     /// <summary>True when the chosen engine can't run yet (cloud engine without a key).</summary>
     public bool NeedsSetup => Settings.Engine == "groq" && string.IsNullOrWhiteSpace(Settings.GroqKey);
 
+    /// <summary>Short label for the current mode: AR, EN, AUTO, or AR→EN when translating.</summary>
+    public string ModeLabel => Settings.Translate
+        ? (Settings.Language == "ar" ? "AR→EN" : "→EN")
+        : Settings.Language switch { "ar" => "AR", "en" => "EN", _ => "AUTO" };
+
+    /// <summary>The language the typed text is in (translation always produces English).</summary>
+    string OutputLanguage => Settings.Translate ? "en" : Settings.Language;
+
     public event Action? StateChanged;
     public event Action<string, StatusKind>? StatusChanged;
     public event Action<string>? PreviewChanged;
@@ -64,6 +78,7 @@ public sealed class DictationController : IDisposable
 
         _autoStop = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => CheckAutoStop(), _ui);
         _autoStop.Start();
+        _holdWatch = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Input, (_, _) => CheckHoldRelease(), _ui);
     }
 
     /// <summary>Call once the UI exists so hotkey problems can be shown to the user.</summary>
@@ -82,6 +97,27 @@ public sealed class DictationController : IDisposable
         else Start();
     }
 
+    void OnToggleHotkey()
+    {
+        if (IsListening)
+        {
+            Stop();
+            return;
+        }
+        Start();
+        if (!IsListening) return;
+        _toggleDownAt = DateTime.UtcNow;
+        _holdWatch.Start();
+    }
+
+    /// <summary>When the shortcut's key comes up: a long press was push-to-talk, so stop; a tap keeps listening.</summary>
+    void CheckHoldRelease()
+    {
+        if ((NativeMethods.GetAsyncKeyState((int)_toggleKey) & 0x8000) != 0) return;
+        _holdWatch.Stop();
+        if (IsListening && DateTime.UtcNow - _toggleDownAt >= HoldThreshold) Stop();
+    }
+
     public void Start(bool quiet = false)
     {
         if (IsListening) return;
@@ -93,8 +129,9 @@ public sealed class DictationController : IDisposable
         }
 
         ISpeechRecognizer recognizer = Settings.Engine == "groq" ? new GroqRecognizer(Settings.GroqKey) : _local;
-        var language = Settings.Language;
-        var session = new SpeechSession(recognizer, Settings.RecognizerLanguage, Settings.LivePreview ? _local : null);
+        var language = OutputLanguage;
+        var session = new SpeechSession(recognizer, Settings.RecognizerLanguage,
+            Settings.LivePreview ? _local : null, Settings.Translate);
         var sessionText = new StringBuilder();
 
         session.Preparing += message => _ui.BeginInvoke(() =>
@@ -170,9 +207,15 @@ public sealed class DictationController : IDisposable
         SetIdleStatus();
     }
 
+    /// <summary>Cycles Arabic → English → Arabic translated to English → Arabic.</summary>
     public void SwitchLanguage()
     {
-        Settings.Language = Settings.Language == "ar" ? "en" : "ar";
+        (Settings.Language, Settings.Translate) = (Settings.Language, Settings.Translate) switch
+        {
+            ("ar", false) => ("en", false),
+            ("en", false) => ("ar", true),
+            _ => ("ar", false),
+        };
         Save();
         _sounds.Switch();
         if (IsListening)
@@ -357,7 +400,8 @@ public sealed class DictationController : IDisposable
             if (string.IsNullOrWhiteSpace(gesture)) return;
             if (!_hotkeys.Register(gesture, action)) failed.Add(gesture);
         }
-        Add(Settings.ToggleHotkey, Toggle);
+        HotkeyGesture.TryParse(Settings.ToggleHotkey, out _, out _toggleKey);
+        Add(Settings.ToggleHotkey, OnToggleHotkey);
         Add(Settings.LanguageHotkey, SwitchLanguage);
         Add(Settings.UndoHotkey, UndoLast);
         Add(Settings.PolishHotkey, PolishLast);
@@ -371,13 +415,16 @@ public sealed class DictationController : IDisposable
         _sounds.Enabled = Settings.Sounds;
         _formatter.VoiceCommands = Settings.VoiceCommands;
         _formatter.StripTashkeel = Settings.StripTashkeel;
+        _formatter.ArabicDigits = Settings.ArabicDigits;
         _formatter.SetSnippets(Snippets);
     }
 
-    void SetIdleStatus() => Status($"Press {Settings.ToggleHotkey} to dictate", StatusKind.Info);
+    void SetIdleStatus() => Status($"Tap or hold {Settings.ToggleHotkey} to dictate", StatusKind.Info);
 
-    void SetListeningStatus() =>
-        Status(Settings.Language == "ar" ? "Listening — تكلّم الآن" : "Listening — speak now", StatusKind.Ok);
+    void SetListeningStatus() => Status(
+        Settings.Translate ? "Listening — translating to English"
+        : Settings.Language == "ar" ? "Listening — تكلّم الآن" : "Listening — speak now",
+        StatusKind.Ok);
 
     void Status(string text, StatusKind kind) => StatusChanged?.Invoke(text, kind);
 
@@ -393,6 +440,7 @@ public sealed class DictationController : IDisposable
     public void Dispose()
     {
         _autoStop.Stop();
+        _holdWatch.Stop();
         if (IsListening) Stop(quiet: true);
         _audio.Dispose();
         _hotkeys?.Dispose();
