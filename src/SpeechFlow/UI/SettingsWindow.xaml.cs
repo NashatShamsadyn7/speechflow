@@ -1,11 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using SpeechFlow.Core;
+using SpeechFlow.Core.Speech;
 
 namespace SpeechFlow.UI;
 
@@ -15,6 +19,7 @@ public partial class SettingsWindow : Window
 
     readonly DictationController _controller;
     readonly ObservableCollection<Snippet> _snippets;
+    CancellationTokenSource? _download;
 
     public SettingsWindow(DictationController controller)
     {
@@ -22,10 +27,13 @@ public partial class SettingsWindow : Window
         _controller = controller;
         var s = controller.Settings;
 
-        DeepgramKeyBox.Password = s.DeepgramKey;
+        foreach (var model in ModelStore.Models)
+            ModelBox.Items.Add(new ComboBoxItem { Tag = model.Id, Content = model.DisplayName });
+
         GroqKeyBox.Password = s.GroqKey;
+        Select(EngineBox, s.Engine);
+        Select(ModelBox, s.LocalModel);
         Select(LanguageBox, s.Language);
-        Select(DialectBox, s.ArabicDialect);
         Select(TypingModeBox, s.TypingMode);
         Select(PolishModeBox, s.PolishMode);
 
@@ -39,7 +47,6 @@ public partial class SettingsWindow : Window
         SoundsBox.IsChecked = s.Sounds;
         HistoryBox.IsChecked = s.SaveHistory;
         StartupBox.IsChecked = s.StartWithWindows;
-        ModelBox.Text = s.Model;
 
         ToggleHotkeyBox.Text = s.ToggleHotkey;
         LanguageHotkeyBox.Text = s.LanguageHotkey;
@@ -49,6 +56,91 @@ public partial class SettingsWindow : Window
         _snippets = new ObservableCollection<Snippet>(
             controller.Snippets.Select(x => new Snippet { Trigger = x.Trigger, Text = x.Text }));
         SnippetGrid.ItemsSource = _snippets;
+
+        UpdateEnginePanels();
+        UpdateModelStatus();
+    }
+
+    WhisperModel SelectedModel => ModelStore.Find(SelectedTag(ModelBox, "small"));
+
+    void OnEngineChanged(object sender, SelectionChangedEventArgs e) => UpdateEnginePanels();
+
+    void OnModelChanged(object sender, SelectionChangedEventArgs e) => UpdateModelStatus();
+
+    void UpdateEnginePanels()
+    {
+        if (LocalPanel is null) return; // SelectionChanged fires during InitializeComponent
+        LocalPanel.Visibility = SelectedTag(EngineBox, "groq") == "local" ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    void UpdateModelStatus()
+    {
+        if (ModelStatus is null || _download is not null) return;
+        bool ready = ModelStore.IsDownloaded(SelectedModel);
+        ModelStatus.Text = ready ? "✓ Downloaded" : "Not downloaded yet (it downloads on first use)";
+        DownloadButton.Visibility = ready ? Visibility.Collapsed : Visibility.Visible;
+        DeleteModelButton.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    async void OnDownload(object sender, RoutedEventArgs e)
+    {
+        if (_download is not null)
+        {
+            _download.Cancel();
+            return;
+        }
+
+        var model = SelectedModel;
+        _download = new CancellationTokenSource();
+        DownloadButton.Content = "Cancel";
+        ModelBox.IsEnabled = false;
+        DownloadProgress.Value = 0;
+        DownloadProgress.Visibility = Visibility.Visible;
+        var progress = new Progress<double>(f =>
+        {
+            DownloadProgress.Value = f;
+            ModelStatus.Text = $"Downloading… {f * 100:0}%";
+        });
+
+        try
+        {
+            await ModelStore.DownloadAsync(model, progress, _download.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (SpeechException ex)
+        {
+            ErrorText.Text = ex.Message;
+        }
+        finally
+        {
+            _download.Dispose();
+            _download = null;
+            DownloadButton.Content = "Download";
+            ModelBox.IsEnabled = true;
+            DownloadProgress.Visibility = Visibility.Collapsed;
+            UpdateModelStatus();
+        }
+    }
+
+    void OnDeleteModel(object sender, RoutedEventArgs e)
+    {
+        var model = SelectedModel;
+        if (_controller.IsListening && _controller.Settings.Engine == "local")
+        {
+            ErrorText.Text = "Stop dictation before deleting the model.";
+            return;
+        }
+        try
+        {
+            File.Delete(ModelStore.PathOf(model));
+        }
+        catch (IOException)
+        {
+            ErrorText.Text = "The model is in use. Restart SpeechFlow, then delete it.";
+        }
+        UpdateModelStatus();
     }
 
     void OnSave(object sender, RoutedEventArgs e)
@@ -76,10 +168,10 @@ public partial class SettingsWindow : Window
         }
 
         var s = _controller.Settings.Clone();
-        s.DeepgramKey = DeepgramKeyBox.Password.Trim();
         s.GroqKey = GroqKeyBox.Password.Trim();
+        s.Engine = SelectedTag(EngineBox, "groq");
+        s.LocalModel = SelectedModel.Id;
         s.Language = SelectedTag(LanguageBox, "ar");
-        s.ArabicDialect = SelectedTag(DialectBox, "ar");
         s.TypingMode = SelectedTag(TypingModeBox, "type");
         s.PolishMode = SelectedTag(PolishModeBox, "grammar");
         s.Microphone = MicrophoneBox.SelectedItem as string is { } mic && mic != DefaultMicrophone ? mic : "";
@@ -89,11 +181,16 @@ public partial class SettingsWindow : Window
         s.Sounds = SoundsBox.IsChecked == true;
         s.SaveHistory = HistoryBox.IsChecked == true;
         s.StartWithWindows = StartupBox.IsChecked == true;
-        s.Model = string.IsNullOrWhiteSpace(ModelBox.Text) ? "nova-3" : ModelBox.Text.Trim();
         s.ToggleHotkey = ToggleHotkeyBox.Text.Trim();
         s.LanguageHotkey = LanguageHotkeyBox.Text.Trim();
         s.UndoHotkey = UndoHotkeyBox.Text.Trim();
         s.PolishHotkey = PolishHotkeyBox.Text.Trim();
+
+        if (s.Engine == "groq" && s.GroqKey.Length == 0)
+        {
+            ErrorText.Text = "The cloud engine needs a Groq API key (free). Or pick “On this PC”.";
+            return;
+        }
 
         SnippetGrid.CommitEdit(DataGridEditingUnit.Row, true);
         var failed = _controller.ApplySettings(s, _snippets.ToList());
@@ -106,6 +203,12 @@ public partial class SettingsWindow : Window
     }
 
     void OnCancel(object sender, RoutedEventArgs e) => Close();
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        _download?.Cancel();
+        base.OnClosing(e);
+    }
 
     void OnClearHistory(object sender, RoutedEventArgs e)
     {

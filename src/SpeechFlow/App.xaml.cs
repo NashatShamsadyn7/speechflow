@@ -48,7 +48,7 @@ public partial class App : Application
         _bar.Show();
         _controller.Initialize();
 
-        if (string.IsNullOrWhiteSpace(_controller.Settings.DeepgramKey)) OpenSettings();
+        if (_controller.NeedsSetup) OpenSettings();
     }
 
     void OpenSettings()

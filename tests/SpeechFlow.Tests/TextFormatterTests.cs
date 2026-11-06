@@ -93,6 +93,26 @@ public class TextFormatterTests
     }
 
     [Fact]
+    public void English_spoken_commands()
+    {
+        Assert.Equal("Dear Sam,\nthanks?", _f.Format("Dear Sam comma new line thanks question mark", "en", null));
+        Assert.Equal("See you soon.", _f.Format("See you soon period", "en", null));
+        Assert.Equal("That period was hard", _f.Format("That period was hard", "en", null));
+    }
+
+    [Fact]
+    public void Whisper_punctuating_the_command_does_not_double() =>
+        Assert.Equal("Hello, world", _f.Format("Hello comma, world", "en", null));
+
+    [Fact]
+    public void Language_detection_by_script()
+    {
+        Assert.Equal("ar", TextFormatter.DetectLanguage("مرحبا بالعالم"));
+        Assert.Equal("en", TextFormatter.DetectLanguage("Hello world"));
+        Assert.Equal("ar", TextFormatter.DetectLanguage("أرسل الملف PDF"));
+    }
+
+    [Fact]
     public void Empty_segment_types_nothing() =>
         Assert.Equal("", _f.Format("   ", "en", 'a'));
 }

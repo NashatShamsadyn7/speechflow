@@ -7,16 +7,26 @@ using System.Text.RegularExpressions;
 namespace SpeechFlow.Core;
 
 /// <summary>
-/// Turns one final transcript segment into the exact text to type.
-/// Deepgram's smart_format already handles capitalisation, numbers and English punctuation
-/// (dictation=true turns "comma", "new line" etc. into symbols), so this class only does what
-/// Deepgram can't: Arabic punctuation commands, Arabic punctuation marks, snippets and the
-/// space that joins one segment to the text already typed. It never inserts spaces inside
-/// tokens, so emails, URLs and numbers like 3.5 or 1,000 pass through untouched.
+/// Turns one transcribed phrase into the exact text to type.
+/// Whisper already capitalises and punctuates, so this class only adds spoken punctuation
+/// commands, Arabic punctuation marks, snippets and the space that joins one phrase to the text
+/// already typed. It never inserts spaces inside tokens, so emails, URLs and numbers like 3.5
+/// or 1,000 pass through untouched.
 /// </summary>
 public sealed class TextFormatter
 {
     const string Letter = @"[\p{L}\p{M}\p{N}]";
+
+    static readonly (Regex Pattern, string Symbol)[] EnglishCommands = BuildCommands(new (string, string)[]
+    {
+        ("new paragraph", "\n\n"), ("new line", "\n"),
+        ("question mark", "?"), ("exclamation mark", "!"), ("exclamation point", "!"),
+        ("open bracket", "("), ("close bracket", ")"),
+        ("comma", ","),
+    }, RegexOptions.IgnoreCase);
+
+    // "period" and "full stop" are ordinary words too; like "نقطة" they only count at the end.
+    static readonly Regex TrailingEnglishFullStop = new($@"(?<!{Letter})(period|full stop)[\s.,]*$", RegexOptions.IgnoreCase);
 
     static readonly (Regex Pattern, string Symbol)[] ArabicCommands = BuildCommands(new (string, string)[]
     {
@@ -39,7 +49,10 @@ public sealed class TextFormatter
     static readonly Regex SpaceBeforeClosing = new(@"[ \t]+(?=[،؛؟!.,:;?)\]])");
     static readonly Regex SpaceAfterOpening = new(@"(?<=[(\[])[ \t]+");
     static readonly Regex SpaceAroundNewline = new(@"[ \t]*\n[ \t]*");
-    static readonly Regex DuplicateAfterArabicMark = new(@"(?<=[،؛؟!:])[ \t]*[.,،]");
+    // Whisper often punctuates the spoken command too: "comma," → ",," / "سطر جديد." → "\n."
+    static readonly Regex DuplicateAfterMark = new(@"(?<=[،؛؟!:,?\n])[ \t]*[.,،]");
+    static readonly Regex ArabicLetters = new(@"[؀-ۿ]");
+    static readonly Regex LatinLetters = new(@"[A-Za-z]");
     static readonly Regex MissingSpaceAfterArabicMark = new(@"(?<=[،؛؟])(?=[^\s\d)\]])");
     static readonly Regex MissingSpaceBeforeOpening = new($@"(?<={Letter})(?=\()");
     static readonly Regex MissingSpaceAfterClosing = new($@"(?<=\))(?={Letter})");
@@ -74,6 +87,10 @@ public sealed class TextFormatter
             text = ToArabicPunctuation(text);
             if (VoiceCommands) text = ApplyArabicCommands(text);
         }
+        else if (VoiceCommands)
+        {
+            text = ApplyEnglishCommands(text);
+        }
 
         text = Tidy(text);
 
@@ -85,11 +102,22 @@ public sealed class TextFormatter
         return NeedsLeadingSpace(previousChar, text[0]) ? " " + text : text;
     }
 
+    /// <summary>"ar" if the text is mostly Arabic script, otherwise "en". Used in auto-language mode.</summary>
+    public static string DetectLanguage(string text) =>
+        ArabicLetters.Count(text) >= LatinLetters.Count(text) && ArabicLetters.IsMatch(text) ? "ar" : "en";
+
     static string ApplyArabicCommands(string text)
     {
         foreach (var (pattern, symbol) in ArabicCommands)
             text = pattern.Replace(text, symbol);
         return TrailingFullStop.Replace(text, ".");
+    }
+
+    static string ApplyEnglishCommands(string text)
+    {
+        foreach (var (pattern, symbol) in EnglishCommands)
+            text = pattern.Replace(text, symbol);
+        return TrailingEnglishFullStop.Replace(text, ".");
     }
 
     /// <summary>Latin , ? ; → Arabic marks, except inside numbers (1,000) and tokens (a?b).</summary>
@@ -116,7 +144,7 @@ public sealed class TextFormatter
     static string Tidy(string text)
     {
         text = SpaceAroundNewline.Replace(text, "\n");
-        text = DuplicateAfterArabicMark.Replace(text, "");
+        text = DuplicateAfterMark.Replace(text, "");
         text = SpaceBeforeClosing.Replace(text, "");
         text = SpaceAfterOpening.Replace(text, "");
         text = MissingSpaceAfterArabicMark.Replace(text, " ");
@@ -134,9 +162,10 @@ public sealed class TextFormatter
         return true;
     }
 
-    static (Regex, string)[] BuildCommands(IEnumerable<(string Phrase, string Symbol)> commands) =>
+    static (Regex, string)[] BuildCommands(IEnumerable<(string Phrase, string Symbol)> commands,
+        RegexOptions options = RegexOptions.None) =>
         commands
             .OrderByDescending(c => c.Phrase.Length) // "فاصلة منقوطة" must win over "فاصلة"
-            .Select(c => (new Regex($@"(?<!{Letter}){Regex.Escape(c.Phrase)}(?!{Letter})"), c.Symbol))
+            .Select(c => (new Regex($@"(?<!{Letter}){Regex.Escape(c.Phrase)}(?!{Letter})", options), c.Symbol))
             .ToArray();
 }

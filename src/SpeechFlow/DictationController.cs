@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using SpeechFlow.Core;
+using SpeechFlow.Core.Speech;
 
 namespace SpeechFlow;
 
@@ -12,7 +13,7 @@ public enum StatusKind { Info, Busy, Ok, Error }
 
 /// <summary>
 /// The app's brain. Every public member and every event runs on the UI thread; work coming from
-/// audio, network or hotkeys is marshalled here first, so the UI is never touched off-thread.
+/// audio, speech recognition or hotkeys is marshalled here first, so the UI is never touched off-thread.
 /// </summary>
 public sealed class DictationController : IDisposable
 {
@@ -21,10 +22,12 @@ public sealed class DictationController : IDisposable
     readonly Typer _typer = new();
     readonly Sounds _sounds = new();
     readonly TextFormatter _formatter = new();
+    readonly LocalWhisperRecognizer _local;
     readonly DispatcherTimer _autoStop;
     HotkeyManager? _hotkeys;
 
-    volatile DeepgramStream? _stream;
+    volatile SpeechSession? _session;
+    bool _sessionReady;
     DateTime _lastActivity;
     volatile float _level;
 
@@ -39,6 +42,8 @@ public sealed class DictationController : IDisposable
     public bool IsListening { get; private set; }
     /// <summary>Latest microphone level (0..1); safe to read from any thread.</summary>
     public float Level => _level;
+    /// <summary>True when the chosen engine can't run yet (cloud engine without a key).</summary>
+    public bool NeedsSetup => Settings.Engine == "groq" && string.IsNullOrWhiteSpace(Settings.GroqKey);
 
     public event Action? StateChanged;
     public event Action<string, StatusKind>? StatusChanged;
@@ -51,6 +56,7 @@ public sealed class DictationController : IDisposable
         _ui = ui;
         Settings = SettingsStore.Load();
         Snippets = SnippetStore.Load();
+        _local = new LocalWhisperRecognizer(ModelStore.Find(Settings.LocalModel));
         ApplyToComponents();
 
         _audio.ChunkAvailable += OnAudioChunk;
@@ -79,35 +85,63 @@ public sealed class DictationController : IDisposable
     public void Start(bool quiet = false)
     {
         if (IsListening) return;
-        if (string.IsNullOrWhiteSpace(Settings.DeepgramKey))
+        if (NeedsSetup)
         {
-            Status("Add your free Deepgram API key to start.", StatusKind.Error);
+            Status("Add your free Groq API key, or switch to the on-device engine.", StatusKind.Error);
             SettingsRequested?.Invoke();
             return;
         }
 
+        ISpeechRecognizer recognizer = Settings.Engine == "groq" ? new GroqRecognizer(Settings.GroqKey) : _local;
         var language = Settings.Language;
-        var stream = new DeepgramStream(Settings.DeepgramKey, Settings.DeepgramLanguage, Settings.Model);
+        var session = new SpeechSession(recognizer, Settings.RecognizerLanguage);
         var sessionText = new StringBuilder();
-        stream.Interim += text => _ui.BeginInvoke(() => OnInterim(stream, text));
-        stream.Final += text => _ui.BeginInvoke(() => OnFinal(stream, text, language, sessionText));
-        stream.StatusChanged += status => _ui.BeginInvoke(() => OnStreamStatus(stream, status));
-        stream.Failed += message => _ui.BeginInvoke(() => { if (stream == _stream) Fail(message); });
-        stream.Completed += () => _ui.BeginInvoke(() => OnSessionCompleted(sessionText, language));
 
-        _stream = stream;
+        session.Preparing += message => _ui.BeginInvoke(() =>
+        {
+            if (session == _session) Status(message, StatusKind.Busy);
+        });
+        session.Ready += () => _ui.BeginInvoke(() =>
+        {
+            if (session != _session) return;
+            _sessionReady = true;
+            _lastActivity = DateTime.UtcNow;
+            SetListeningStatus();
+        });
+        session.SpeechStarted += () => _ui.BeginInvoke(() =>
+        {
+            if (session != _session) return;
+            _lastActivity = DateTime.UtcNow;
+            PreviewChanged?.Invoke("…");
+        });
+        session.Transcribing += busy => _ui.BeginInvoke(() =>
+        {
+            if (session != _session || !_sessionReady) return;
+            if (busy) Status("Writing…", StatusKind.Busy);
+            else SetListeningStatus();
+        });
+        session.Final += text => _ui.BeginInvoke(() => OnFinal(session, text, language, sessionText));
+        session.Failed += message => _ui.BeginInvoke(() =>
+        {
+            if (session == _session) Fail(message);
+            else Notify?.Invoke(message);
+        });
+        session.Completed += () => _ui.BeginInvoke(() => OnSessionCompleted(sessionText, language));
+
+        _session = session;
+        _sessionReady = false;
         try
         {
             _audio.Start(Settings.Microphone);
         }
         catch (Exception ex)
         {
-            _stream = null;
+            _session = null;
             Log.Error("Could not open the microphone", ex);
             Fail("Can't open the microphone. Check Windows Settings → Privacy → Microphone.");
             return;
         }
-        stream.Start();
+        session.Start();
 
         IsListening = true;
         _segments.Clear();
@@ -122,8 +156,8 @@ public sealed class DictationController : IDisposable
         if (!IsListening) return;
         IsListening = false;
         _audio.Stop();
-        _stream?.Complete(); // keeps delivering the last words for a moment
-        _stream = null;
+        _session?.Complete(); // still transcribes the phrase you were saying
+        _session = null;
         _level = 0;
         if (!quiet) _sounds.Stop();
         StateChanged?.Invoke();
@@ -137,7 +171,7 @@ public sealed class DictationController : IDisposable
         _sounds.Switch();
         if (IsListening)
         {
-            // A Deepgram stream has one language, so restart; the old one still flushes its last words.
+            // A session has one language, so restart; the old one still finishes its last phrase.
             Stop(quiet: true);
             Start(quiet: true);
         }
@@ -222,6 +256,8 @@ public sealed class DictationController : IDisposable
         SnippetStore.Save(snippets);
         StartupRegistration.Apply(settings.StartWithWindows);
         ApplyToComponents();
+        var model = ModelStore.Find(settings.LocalModel);
+        _ = Task.Run(() => _local.SetModel(model)); // may wait for a phrase still being transcribed
         var failed = RegisterHotkeys();
 
         StateChanged?.Invoke();
@@ -240,22 +276,15 @@ public sealed class DictationController : IDisposable
     void OnAudioChunk(byte[] pcm, float rms)
     {
         _level = rms;
-        _stream?.Write(pcm);
+        _session?.Write(pcm, rms);
     }
 
-    void OnInterim(DeepgramStream stream, string text)
+    void OnFinal(SpeechSession session, string text, string language, StringBuilder sessionText)
     {
-        if (stream != _stream) return;
-        _lastActivity = DateTime.UtcNow;
-        PreviewChanged?.Invoke(text);
-    }
-
-    void OnFinal(DeepgramStream stream, string text, string language, StringBuilder sessionText)
-    {
-        if (stream == _stream) _lastActivity = DateTime.UtcNow;
+        if (session == _session) _lastActivity = DateTime.UtcNow;
 
         // If the user moved to another window, we don't know what's before the cursor any more.
-        var target = Core.NativeMethods.GetForegroundWindow();
+        var target = NativeMethods.GetForegroundWindow();
         if (target != _lastTargetWindow)
         {
             _lastTargetWindow = target;
@@ -263,7 +292,8 @@ public sealed class DictationController : IDisposable
             _segments.Clear();
         }
 
-        var output = _formatter.Format(text, language, _lastTypedChar);
+        var textLanguage = language == "auto" ? TextFormatter.DetectLanguage(text) : language;
+        var output = _formatter.Format(text, textLanguage, _lastTypedChar);
         if (output.Length == 0) return;
 
         _typer.Type(output, Settings.TypingMode == "paste");
@@ -271,17 +301,6 @@ public sealed class DictationController : IDisposable
         _lastTypedChar = output[^1];
         sessionText.Append(output);
         PreviewChanged?.Invoke(output.Trim());
-    }
-
-    void OnStreamStatus(DeepgramStream stream, StreamStatus status)
-    {
-        if (stream != _stream || !IsListening) return;
-        switch (status)
-        {
-            case StreamStatus.Connecting: Status("Connecting…", StatusKind.Busy); break;
-            case StreamStatus.Reconnecting: Status("Connection lost, reconnecting…", StatusKind.Busy); break;
-            case StreamStatus.Connected: Status(Settings.Language == "ar" ? "Listening — تكلّم الآن" : "Listening — speak now", StatusKind.Ok); break;
-        }
     }
 
     void OnSessionCompleted(StringBuilder sessionText, string language)
@@ -293,6 +312,12 @@ public sealed class DictationController : IDisposable
     void CheckAutoStop()
     {
         if (!IsListening || Settings.AutoStopSeconds <= 0) return;
+        if (!_sessionReady)
+        {
+            // Downloading or loading the model doesn't count as silence.
+            _lastActivity = DateTime.UtcNow;
+            return;
+        }
         if ((DateTime.UtcNow - _lastActivity).TotalSeconds >= Settings.AutoStopSeconds)
         {
             Stop();
@@ -306,8 +331,8 @@ public sealed class DictationController : IDisposable
         {
             IsListening = false;
             _audio.Stop();
-            _stream?.Complete();
-            _stream = null;
+            _session?.Cancel();
+            _session = null;
             _level = 0;
             StateChanged?.Invoke();
         }
@@ -345,6 +370,9 @@ public sealed class DictationController : IDisposable
 
     void SetIdleStatus() => Status($"Press {Settings.ToggleHotkey} to dictate", StatusKind.Info);
 
+    void SetListeningStatus() =>
+        Status(Settings.Language == "ar" ? "Listening — تكلّم الآن" : "Listening — speak now", StatusKind.Ok);
+
     void Status(string text, StatusKind kind) => StatusChanged?.Invoke(text, kind);
 
     void Save()
@@ -363,5 +391,6 @@ public sealed class DictationController : IDisposable
         _audio.Dispose();
         _hotkeys?.Dispose();
         _typer.Dispose();
+        _local.Dispose();
     }
 }

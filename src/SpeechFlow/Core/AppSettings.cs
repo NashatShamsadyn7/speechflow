@@ -9,14 +9,15 @@ namespace SpeechFlow.Core;
 
 public sealed class AppSettings
 {
-    public string DeepgramKey { get; set; } = "";
     public string GroqKey { get; set; } = "";
 
-    /// <summary>"ar" or "en".</summary>
+    /// <summary>"groq" (cloud, nothing to download) or "local" (Whisper on this PC, offline).</summary>
+    public string Engine { get; set; } = "groq";
+    /// <summary>Id from <see cref="Speech.ModelStore.Models"/>, used by the local engine.</summary>
+    public string LocalModel { get; set; } = "small";
+
+    /// <summary>"ar", "en" or "auto".</summary>
     public string Language { get; set; } = "ar";
-    /// <summary>Deepgram code used when Language is "ar", e.g. "ar" or a dialect such as "ar-IQ".</summary>
-    public string ArabicDialect { get; set; } = "ar";
-    public string Model { get; set; } = "nova-3";
 
     /// <summary>"type" (SendInput) or "paste" (clipboard + Ctrl+V).</summary>
     public string TypingMode { get; set; } = "type";
@@ -41,7 +42,8 @@ public sealed class AppSettings
     public double? BarLeft { get; set; }
     public double? BarTop { get; set; }
 
-    public string DeepgramLanguage => Language == "ar" ? ArabicDialect : "en";
+    /// <summary>Language passed to the recognizer; null lets Whisper detect it per phrase.</summary>
+    public string? RecognizerLanguage => Language == "auto" ? null : Language;
 
     public AppSettings Clone() =>
         JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(this))!;
@@ -64,7 +66,6 @@ public static class SettingsStore
             if (File.Exists(AppPaths.SettingsFile))
             {
                 var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(AppPaths.SettingsFile)) ?? new();
-                settings.DeepgramKey = Unprotect(settings.DeepgramKey);
                 settings.GroqKey = Unprotect(settings.GroqKey);
                 return settings;
             }
@@ -79,7 +80,6 @@ public static class SettingsStore
     public static void Save(AppSettings settings)
     {
         var node = JsonSerializer.SerializeToNode(settings)!.AsObject();
-        node[nameof(AppSettings.DeepgramKey)] = Protect(settings.DeepgramKey);
         node[nameof(AppSettings.GroqKey)] = Protect(settings.GroqKey);
         AppPaths.WriteAllTextAtomic(AppPaths.SettingsFile, node.ToJsonString(Json));
     }

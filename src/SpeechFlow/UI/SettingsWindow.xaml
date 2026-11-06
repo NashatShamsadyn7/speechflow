@@ -39,37 +39,38 @@
             <TabItem Header="General">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
-                        <TextBlock Style="{StaticResource Label}" Text="Deepgram API key (required)" Margin="0,0,0,4" />
-                        <PasswordBox x:Name="DeepgramKeyBox" />
-                        <TextBlock Style="{StaticResource Hint}">
-                            Free key with $200 credit:
-                            <Hyperlink NavigateUri="https://console.deepgram.com/signup" RequestNavigate="OnLink">console.deepgram.com</Hyperlink>
-                            → API Keys → Create. Stored encrypted for your Windows account.
-                        </TextBlock>
+                        <TextBlock Style="{StaticResource Label}" Text="Speech engine" Margin="0,0,0,4" />
+                        <ComboBox x:Name="EngineBox" SelectionChanged="OnEngineChanged">
+                            <ComboBoxItem Tag="groq" Content="Cloud (Groq) — best and fastest, nothing to download" />
+                            <ComboBoxItem Tag="local" Content="On this PC — free, private, works offline" />
+                        </ComboBox>
+
+                        <StackPanel x:Name="GroqPanel">
+                            <TextBlock Style="{StaticResource Label}" Text="Groq API key (free)" />
+                            <PasswordBox x:Name="GroqKeyBox" />
+                            <TextBlock Style="{StaticResource Hint}">
+                                Sign in at
+                                <Hyperlink NavigateUri="https://console.groq.com/keys" RequestNavigate="OnLink">console.groq.com/keys</Hyperlink>
+                                with Google, click “Create API Key”, and paste it here. No credit card. Stored encrypted for your Windows account.
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel x:Name="LocalPanel">
+                            <TextBlock Style="{StaticResource Label}" Text="Speech model (downloaded once)" />
+                            <ComboBox x:Name="ModelBox" SelectionChanged="OnModelChanged" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button x:Name="DownloadButton" Content="Download" Padding="12,3" Click="OnDownload" />
+                                <Button x:Name="DeleteModelButton" Content="Delete" Padding="12,3" Margin="8,0,0,0" Click="OnDeleteModel" />
+                                <TextBlock x:Name="ModelStatus" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#6B7280" />
+                            </StackPanel>
+                            <ProgressBar x:Name="DownloadProgress" Height="4" Margin="0,6,0,0" Maximum="1" Visibility="Collapsed" />
+                        </StackPanel>
 
                         <TextBlock Style="{StaticResource Label}" Text="Language" />
                         <ComboBox x:Name="LanguageBox">
                             <ComboBoxItem Tag="ar" Content="العربية — Arabic" />
                             <ComboBoxItem Tag="en" Content="English" />
-                        </ComboBox>
-
-                        <TextBlock Style="{StaticResource Label}" Text="Arabic dialect" />
-                        <ComboBox x:Name="DialectBox">
-                            <ComboBoxItem Tag="ar" Content="Standard / auto" />
-                            <ComboBoxItem Tag="ar-IQ" Content="Iraqi" />
-                            <ComboBoxItem Tag="ar-SA" Content="Saudi" />
-                            <ComboBoxItem Tag="ar-AE" Content="Emirati" />
-                            <ComboBoxItem Tag="ar-KW" Content="Kuwaiti" />
-                            <ComboBoxItem Tag="ar-QA" Content="Qatari" />
-                            <ComboBoxItem Tag="ar-EG" Content="Egyptian" />
-                            <ComboBoxItem Tag="ar-SY" Content="Syrian" />
-                            <ComboBoxItem Tag="ar-LB" Content="Lebanese" />
-                            <ComboBoxItem Tag="ar-JO" Content="Jordanian" />
-                            <ComboBoxItem Tag="ar-PS" Content="Palestinian" />
-                            <ComboBoxItem Tag="ar-MA" Content="Moroccan" />
-                            <ComboBoxItem Tag="ar-DZ" Content="Algerian" />
-                            <ComboBoxItem Tag="ar-TN" Content="Tunisian" />
-                            <ComboBoxItem Tag="ar-SD" Content="Sudanese" />
+                            <ComboBoxItem Tag="auto" Content="Detect automatically (Arabic or English per phrase)" />
                         </ComboBox>
 
                         <TextBlock Style="{StaticResource Label}" Text="Microphone" />
@@ -84,33 +85,20 @@
                         <TextBlock Style="{StaticResource Label}" Text="Stop automatically after silence (seconds, 0 = never)" />
                         <TextBox x:Name="AutoStopBox" Width="80" HorizontalAlignment="Left" />
 
-                        <CheckBox x:Name="VoiceCommandsBox" Content="Arabic voice punctuation (فاصلة، سطر جديد، علامة استفهام…)" />
+                        <CheckBox x:Name="VoiceCommandsBox" Content="Spoken punctuation (فاصلة، سطر جديد… / comma, new line…)" />
                         <CheckBox x:Name="TashkeelBox" Content="Remove Arabic diacritics (tashkeel)" />
                         <CheckBox x:Name="SoundsBox" Content="Play sounds on start / stop" />
                         <CheckBox x:Name="HistoryBox" Content="Keep a local history of what I dictate" />
                         <CheckBox x:Name="StartupBox" Content="Start SpeechFlow when Windows starts" />
-                        <TextBlock Style="{StaticResource Hint}" Text="English punctuation is spoken naturally: say “comma”, “period”, “question mark”, “new line”." />
-
-                        <Expander Header="Advanced" Margin="0,16,0,0">
-                            <StackPanel Margin="0,4,0,0">
-                                <TextBlock Style="{StaticResource Label}" Text="Deepgram model" />
-                                <TextBox x:Name="ModelBox" />
-                                <TextBlock Style="{StaticResource Hint}" Text="nova-3 supports Arabic and English. Change only if you know what you're doing." />
-                                <Button Content="Clear dictation history" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,3" Click="OnClearHistory" />
-                            </StackPanel>
-                        </Expander>
+                        <Button Content="Clear dictation history" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,3" Click="OnClearHistory" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <TabItem Header="AI polish">
                 <StackPanel Margin="12">
-                    <TextBlock Style="{StaticResource Label}" Text="Groq API key (optional)" Margin="0,0,0,4" />
-                    <PasswordBox x:Name="GroqKeyBox" />
-                    <TextBlock Style="{StaticResource Hint}">
-                        Free key:
-                        <Hyperlink NavigateUri="https://console.groq.com/keys" RequestNavigate="OnLink">console.groq.com/keys</Hyperlink>
-                    </TextBlock>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4"
+                               Text="AI polish uses the Groq API key from the General tab, even if you dictate with the on-device engine." />
 
                     <TextBlock Style="{StaticResource Label}" Text="When I press the polish shortcut" />
                     <ComboBox x:Name="PolishModeBox">
